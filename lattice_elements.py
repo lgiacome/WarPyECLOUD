@@ -8,18 +8,19 @@ class Dipole:
 
 class CrabFields:
 
-    def __init__(self, max_z, max_rescale = 1.):
+    def __init__(self, max_z, max_rescale = 1., efield_path = 'efield.txt',
+                 hfield_path = 'hfield.txt'):
         get_data = picmi.getdatafromtextfile
-        [self.x,self.y,self.z,self.Ex,self.Ey,self.Ez] = get_data("efield.txt",
+        [self.x,self.y,self.z,self.Ex,self.Ey,self.Ez] = get_data(efield_path,
                                                         nskip=1, dims=[6,None])
-        [_,_,_,Hx,Hy,Hz] = get_data("hfield.txt",nskip=1,dims=[6,None])
+        [_,_,_,Hx,Hy,Hz] = get_data(hfield_path, nskip=1, dims=[6, None])
 
         self.Bx = Hx*picmi.mu0
         self.By = Hy*picmi.mu0
         self.Bz = Hz*picmi.mu0
 
         # Interpolate them at cell centers (as prescribed by Warp doc)
-        self.d = abs(self.x[1]-self.x[0])
+        self.d = abs(self.x[1] - self.x[0])
         # Number of mesh cells
         self.NNx = int(round(2*np.max(self.x)/self.d))
         self.NNy = int(round(2*np.max(self.y)/self.d))
@@ -168,7 +169,11 @@ class CrabFields:
                                                     ez = self.Ez3d)
 
 
-        picmi.warp.addnewbgrd(self.zs, self.ze, dx = self.d, dy = self.d,
-                              xs = self.xs, ys = self.ys,
-                              time = self.time_array, data = self.data_arrayB,
-                              bx = self.Bx3d, by = self.By3d, bz = self.Bz3d)
+        self.ib, self.bgrid = picmi.warp.addnewbgrd(self.zs, self.ze, 
+                                                    dx = self.d, dy = self.d,
+                                                    xs = self.xs, ys = self.ys,
+                                                    time = self.time_array, 
+                                                    data = self.data_arrayB,
+                                                    bx = self.Bx3d, 
+                                                    by = self.By3d, 
+                                                    bz = self.Bz3d)
