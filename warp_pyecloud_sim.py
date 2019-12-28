@@ -67,6 +67,7 @@ class warp_pyecloud_sim:
         self.temps_filename = temps_filename
         self.custom_plot = custom_plot
         self.images_dir = images_dir
+        self.lattice_elem = lattice_elem
         # Just some shortcuts
         pw = picmi.warp
         step = pw.step
