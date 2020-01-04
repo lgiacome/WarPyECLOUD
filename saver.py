@@ -63,9 +63,7 @@ class Saver:
 
         dict_out_temp['b_pass'] = b_pass
 
-        filename = 'temp_mps_info.mat'
-
-        sio.savemat(filename, dict_out_temp)
+        sio.savemat(self.temps_filename, dict_out_temp)
 
     def update_outputs(self, sw, ew, nz, n_step):
         secelec_w = sw.getw()
