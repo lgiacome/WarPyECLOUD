@@ -67,6 +67,8 @@ class warp_pyecloud_sim:
         self.temps_filename = temps_filename
         self.custom_plot = custom_plot
         self.images_dir = images_dir
+        if not os.path.exists(images_dir):
+            os.makedirs(images_dir)
         self.lattice_elem = lattice_elem
         # Just some shortcuts
         pw = picmi.warp
@@ -107,7 +109,6 @@ class warp_pyecloud_sim:
         
         # If checkopoint is found reload it, 
         # otherwise start with uniform distribution
-        self.temp_file_name = 'temp_mps_info.mat'
         if self.flag_checkpointing and os.path.exists(self.temp_file_name): 
             electron_background_dist = self.load_elec_density()
         else:
@@ -188,17 +189,17 @@ class warp_pyecloud_sim:
         pp = warp.ParticleScraper(sim.conductors, lsavecondid = 1, 
                                   lsaveintercept = 1,lcollectlpdata = 1)
 
-        sec=Secondaries(conductors = sim.conductors, l_usenew = 1,
+        self.sec=Secondaries(conductors = sim.conductors, l_usenew = 1,
                         pyecloud_secemi_object = sey_mod,
                         pyecloud_nel_mp_ref = pyecloud_nel_mp_ref,
                         pyecloud_fact_clean = pyecloud_fact_clean,
                         pyecloud_fact_split = pyecloud_fact_split)
 
-        sec.add(incident_species = self.elecb.wspecies,
+        self.sec.add(incident_species = self.elecb.wspecies,
                 emitted_species  = self.secelec.wspecies,
                 conductor        = sim.conductors)
 
-        sec.add(incident_species = self.secelec.wspecies,
+        self.sec.add(incident_species = self.secelec.wspecies,
                 emitted_species = self.secelec.wspecies,
                 conductor       = sim.conductors)
 
@@ -218,6 +219,7 @@ class warp_pyecloud_sim:
         tstep_start = int(np.round(t_start/top.dt))
 
         # aux variables
+        ###############aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa####################
         self.b_pass = 0
         self.perc = 10
         self.t0 = time.time()
@@ -246,7 +248,7 @@ class warp_pyecloud_sim:
                           %(self.secelec.wspecies.getn()))
                     print('MAXIMUM LIMIT OF MPS HAS BEEN RACHED')
                     perform_regeneration(self.N_mp_target, 
-                                         self.secelec.wspecies, sec)
+                                         self.secelec.wspecies, self.sec)
                  
                 # Save stuff if checkpoint
                 if (self.flag_checkpointing 
@@ -354,6 +356,7 @@ class warp_pyecloud_sim:
         
         self.b_pass = dict_init_dist['b_pass'][0][0]
         self.b_pass_prev = dict_init_dist['b_pass'][0][0] - 1
+        self.n_step = dict_init_dist['n_step'][0][0]
 
     
 
