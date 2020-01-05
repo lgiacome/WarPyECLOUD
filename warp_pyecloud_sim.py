@@ -82,8 +82,7 @@ class warp_pyecloud_sim:
                 pw.top.lrelativ = pw.false
 
 
-        self.tot_nsteps = int(np.ceil(b_spac*(n_bunches)/top.dt))
-
+        self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
         self.saver = Saver(flag_output, flag_checkpointing, 
                       self.tot_nsteps, n_bunches, nbins, 
                       temps_filename = temps_filename,
@@ -109,10 +108,11 @@ class warp_pyecloud_sim:
         
         # If checkopoint is found reload it, 
         # otherwise start with uniform distribution
-        if self.flag_checkpointing and os.path.exists(self.temp_file_name): 
+        if self.flag_checkpointing and os.path.exists(self.temps_filename): 
             electron_background_dist = self.load_elec_density()
         else:
             electron_background_dist = self.init_uniform_density() 
+        self.flag_first_pass = True
 
         self.elecb = picmi.Species(particle_type = 'electron',
                               particle_shape = 'linear',
@@ -214,13 +214,9 @@ class warp_pyecloud_sim:
         pw.installafterstep(plot_func)
         plot_func(1)
 
-        self.ntsteps_p_bunch = b_spac/top.dt
-        t_start = self.b_pass_prev*b_spac
-        tstep_start = int(np.round(t_start/top.dt))
+        self.ntsteps_p_bunch = int(np.round(b_spac/top.dt))
 
         # aux variables
-        ###############aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa####################
-        self.b_pass = 0
         self.perc = 10
         self.t0 = time.time()
         
@@ -228,19 +224,19 @@ class warp_pyecloud_sim:
         self.text_trap = {True: StringIO(), False: sys.stdout}[enable_trap]
         self.original = sys.stdout
 
-        self.n_step = int(np.round(self.b_pass_prev*b_spac/dt))
+        self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
          
     def step(self, u_steps = 1):
         for u_step in range(u_steps):
             # if a passage is starting...
-            if (self.n_step/self.ntsteps_p_bunch 
-                    >= self.b_pass + self.b_pass_prev):
+            if (self.n_step%self.ntsteps_p_bunch == 0):
                 self.b_pass+=1
                 self.perc = 10
                 # Measure the duration of the previous passage
-                if self.b_pass>1:
+                if not self.flag_first_pass:
                     self.t_pass_1 = time.time()
                     self.t_pass = self.t_pass_1-self.t_pass_0
+
                 self.t_pass_0 = time.time()
                 # Perform regeneration if needed
                 if self.secelec.wspecies.getn() > self.N_mp_max:
@@ -252,24 +248,25 @@ class warp_pyecloud_sim:
                  
                 # Save stuff if checkpoint
                 if (self.flag_checkpointing 
-                   and np.any(self.checkpoints == self.b_pass + self.b_pass_prev)):
-                    self.saver.save_checkpoint(self.b_pass + self.b_pass_prev, 
+                   and np.any(self.checkpoints == self.b_pass)):
+                    self.saver.save_checkpoint(self.b_pass, 
                                                self.elecb.wspecies, 
                                                self.secelec.wspecies)
 
                 print('===========================')
-                print('Bunch passage: %d' %(self.b_pass+self.b_pass_prev))
+                print('Bunch passage: %d' %(self.b_pass))
                 print('Number of electrons in the dipole: %d'
                         %(np.sum(self.secelec.wspecies.getw())
                           + np.sum(self.elecb.wspecies.getw())))
                 print('Number of macroparticles: %d' 
                         %(self.secelec.wspecies.getn() 
                           + self.elecb.wspecies.getn()))
-                if self.b_pass > 1:
+                if not self.flag_first_pass:
                     print('Previous passage took %ds' %self.t_pass)
 
+                self.flag_first_pass = False
 
-            if (self.n_step%self.ntsteps_p_bunch/self.ntsteps_p_bunch*100 
+            if ((self.n_step%self.ntsteps_p_bunch)/self.ntsteps_p_bunch*100 
                         > self.perc):
                 print('%d%% of bunch passage' %self.perc)
                 self.perc = self.perc + 10
@@ -297,13 +294,13 @@ class warp_pyecloud_sim:
                 t1 = time.time()
                 totalt = t1-self.t0
                 # Delete checkpoint if found
-                if flag_checkpointing and os.path.exists('temp_mps_info.mat'):
-                    os.remove('temp_mps_info.mat')
+                #if flag_checkpointing and os.path.exists(self.temps_filename):
+                #    os.remove(self.temps_filename)
 
                 print('Run terminated in %ds' %totalt)
 
     def all_steps(self):
-        self.step(self.tot_nsteps)
+        self.step(self.tot_nsteps-self.n_step)
 
     def init_uniform_density(self):
         chamber = self.chamber
@@ -331,7 +328,7 @@ class warp_pyecloud_sim:
             
         w0 = float(self.init_num_elecs)/float(init_num_elecs_mp)         
     
-        self.b_pass_prev = 0
+        self.b_pass = 0
 
         return picmi.ParticleListDistribution(x = x0, y = y0, z = z0, vx = vx0,
                                               vy = vy0, vz = vz0, weight = w0)
@@ -342,7 +339,7 @@ class warp_pyecloud_sim:
         print('#############################################################')
         print('Temp distribution found. Reloading it as initial distribution')
         print('#############################################################')
-        dict_init_dist = sio.loadmat(self.temp_file_name)
+        dict_init_dist = sio.loadmat(self.temps_filename)
         # Load particles status
         x0 = dict_init_dist['x_mp'][0]
         y0 = dict_init_dist['y_mp'][0]
@@ -354,11 +351,8 @@ class warp_pyecloud_sim:
         vz0 = dict_init_dist['vz_mp'][0]
         w0 = dict_init_dist['nel_mp'][0]
         
-        self.b_pass = dict_init_dist['b_pass'][0][0]
-        self.b_pass_prev = dict_init_dist['b_pass'][0][0] - 1
-        self.n_step = dict_init_dist['n_step'][0][0]
-
-    
+        self.b_pass = dict_init_dist['b_pass'][0][0] -1 
+        self.n_step = int(np.round(self.b_pass*self.b_spac/picmi.warp.top.dt)) 
 
         return picmi.ParticleListDistribution(x = x0, y = y0, z = z0, vx = vx0,
                                               vy = vy0, vz = vz0, weight = w0)
