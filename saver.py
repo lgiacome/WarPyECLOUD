@@ -35,7 +35,7 @@ class Saver:
             self.numelecs_tot = dict_init_dist['numelecs_tot'][0]
             self.xhist = dict_init_dist['xhist']
             self.bins = dict_init_dist['bins']
-            self.b_pass = dict_init_dist['b_pass']
+            self.b_pass = dict_init_dist['b_pass']  
     
     def save_checkpoint(self, b_pass, elecbw, secelecw):
         dict_out_temp = {}
@@ -61,7 +61,7 @@ class Saver:
             dict_out_temp['xhist'] = self.xhist
             dict_out_temp['bins'] = self.bins
 
-        dict_out_temp['b_pass'] = b_pass
+        dict_out_temp['b_pass'] = b_pass 
 
         sio.savemat(self.temps_filename, dict_out_temp)
 
@@ -72,6 +72,14 @@ class Saver:
                        + ew.get_density(l_dividebyvolume=0)[:,:,int(nz/2.)])
         elecs_density_tot = (sw.get_density(l_dividebyvolume=0)[:,:,:] 
                            + ew.get_density(l_dividebyvolume=0)[:,:,:])
+        # resize outputs if needed, this could happen in the event
+        # of a restart with a different simulation length
+        if self.tot_nsteps > len(self.numelecs):
+            N_add = self.tot_nsteps - len(self.numelecs)
+            self.numelecs = np.pad(self.numelecs, (0,N_add), 'constant')
+            self.numelecs_tot = np.pad(self.numelecs_tot, (0,N_add), 'constant')
+            self.N_mp = np.pad(self.N_mp, (0,N_add), 'constant')
+
         self.numelecs[n_step] = np.sum(elecs_density)
         self.numelecs_tot[n_step] = np.sum(elecs_density_tot)
         self.N_mp[n_step] = len(secelec_w)+len(elecb_w)
