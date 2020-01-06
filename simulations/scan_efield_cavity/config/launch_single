@@ -1,0 +1,1 @@
+bsub -B -N -R "rusage[mem=4096]" -o /cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_55.0/crab.out -n 24 -W 1440 mpirun -np 24 python /cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_55.0/complete_sim.py -p 1 1 24

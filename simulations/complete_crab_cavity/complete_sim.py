@@ -1,5 +1,6 @@
 import sys
 import os
+from pathlib import Path
 from warp import *
 from warp import picmi
 
@@ -37,8 +38,12 @@ sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
 print(sigmax)
 sigmat= 1.000000e-09/4.
 max_z = 0.3
-efield_path = '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/efield.txt'
-hfield_path = '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/hfield.txt'
+
+# Paths for the fields
+fields_folder = str(Path(os.getcwd()).parent.parent)
+efield_path = fields_folder + '/efield.txt'
+hfield_path = fields_folder + '/hfield.txt'
+
 chamber = CrabCavity(-max_z, max_z)
 E_field_max = 57e6
 lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
