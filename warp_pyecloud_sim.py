@@ -417,12 +417,8 @@ class warp_pyecloud_sim:
             axs[1].set_ylabel('y [m]')
             axs[1].set_title('e- density')
             fig.colorbar(im2, ax = axs[1])
-<<<<<<< HEAD
+
             figname = self.images_dir + '/%d.png' %int(self.n_step)
-=======
-            n_step = top.time/top.dt
-            figname = self.images_dir + '/%d.png' %n_step
->>>>>>> d5f6dca33d06c7540f3bbf5d7cedbcd6c0fd26f0
             plt.savefig(figname)
 
     def self_wrapped_custom_plot(self, l_force = 0):
