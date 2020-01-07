@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import replaceline as rl
+from pathlib import Path
 
 from scipy.constants import c as clight
 
@@ -16,12 +17,12 @@ os.mkdir(scan_folder+'/progress')
 launch_file_lines = []
 launch_file_lines +=['#!/bin/bash\n']
 
-Emax_vect = np.linspace(0,55,12)
+Emax_vect = np.linspace(0,55e6,12)
 
 prog_num = 0 
 for Emax in Emax_vect:                
     prog_num +=1
-    current_sim_ident = 'complete_cavity_Emax_'+str(Emax)
+    current_sim_ident = 'complete_cavity_Emax_'+str(Emax/1e6)
     print(current_sim_ident)
     current_sim_folder = scan_folder+'/'+current_sim_ident
     os.mkdir(current_sim_folder)
