@@ -131,4 +131,5 @@ dmypy.json
 *.gz
 *.png
 *.mat
+*.out
 
