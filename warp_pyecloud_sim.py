@@ -212,7 +212,6 @@ class warp_pyecloud_sim:
             plot_func = self.myplots
 
         pw.installafterstep(plot_func)
-        plot_func(1)
 
         self.ntsteps_p_bunch = int(np.round(b_spac/top.dt))
 
@@ -225,6 +224,7 @@ class warp_pyecloud_sim:
         self.original = sys.stdout
 
         self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
+        plot_func(1)
          
     def step(self, u_steps = 1):
         for u_step in range(u_steps):
