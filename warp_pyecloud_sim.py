@@ -255,7 +255,7 @@ class warp_pyecloud_sim:
 
                 print('===========================')
                 print('Bunch passage: %d' %(self.b_pass))
-                print('Number of electrons in the dipole: %d'
+                print('Number of electrons: %d'
                         %(np.sum(self.secelec.wspecies.getw())
                           + np.sum(self.elecb.wspecies.getw())))
                 print('Number of macroparticles: %d' 
