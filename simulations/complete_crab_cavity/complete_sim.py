@@ -1,9 +1,6 @@
 import sys
 import os
-<<<<<<< HEAD
 from pathlib import Path
-=======
->>>>>>> d5f6dca33d06c7540f3bbf5d7cedbcd6c0fd26f0
 from warp import *
 from warp import picmi
 
@@ -22,10 +19,9 @@ enable_trap = True
 N_mp_max = 6000000
 init_num_elecs = 2*10**7
 dh = 3.e-4
-width = 2*35e-3
-height = 2*18e-3
-nx = 200 #int(np.ceil(width/dh))
-ny = 200 #int(np.ceil(height/dh))
+
+nx = 200 
+ny = 200 
 nz = 100
 
 # Compute sigmas
@@ -52,6 +48,124 @@ E_field_max = 57e6
 lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
                           hfield_path = hfield_path)
 n_bunches = 50
+
+def plots_crab(self, l_force = 0):
+    chamber = self.chamber
+    if l_force or self.n_step%self.stride_imgs == 0:
+        plt.close()
+        (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
+        fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
+        fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
+                            top = 0.94, wspace = 0.15)
+        d = (self.secelec.wspecies.get_density()
+           + self.elecb.wspecies.get_density()
+           + self.beam.wspecies.get_density())
+        d2  = (self.secelec.wspecies.get_density() 
+            + self.elecb.wspecies.get_density())
+        im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet', 
+              origin = 'lower', vmin = 0.2*np.min(d2[:, :, int(Nz/2)]), 
+              vmax = 0.8*np.max(d2[:, :, int(Nz/2)]), 
+              extent = [chamber.xmin, chamber.xmax , 
+                        chamber.ymin, chamber.ymax])
+
+        lw = 2
+        axc = axs[0]
+        axc.vlines(x = -chamber.l_main_x/2, ymin = -chamber.l_main_y/2,
+                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.vlines(x = chamber.l_main_x/2, ymin = -chamber.l_main_y/2,
+                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.vlines(x = chamber.l_main_int_x, ymax = chamber.l_main_y/2,
+                                   ymin = chamber.ycen_up-chamber.l_main_int_y, 
+                                                        color = 'red', lw = lw)
+        axc.vlines(x = chamber.l_main_int_x, ymin = -chamber.l_main_y/2,
+                                 ymax = chamber.ycen_down+chamber.l_main_int_y, 
+                                                        color = 'red', lw = lw)
+        axc.vlines(x = -chamber.l_main_int_x, ymax = chamber.l_main_y/2,
+                                   ymin = chamber.ycen_up-chamber.l_main_int_y, 
+                                                        color = 'red', lw = lw)
+        axc.vlines(x = -chamber.l_main_int_x, ymin = -chamber.l_main_y/2,
+                                 ymax = chamber.ycen_down+chamber.l_main_int_y, 
+                                                        color = 'red', lw = lw)
+        axc.hlines(y = chamber.l_main_y/2, xmin = -chamber.l_main_x/2,
+                          xmax = -chamber.l_main_int_x, color = 'red', lw = lw)
+        axc.hlines(y = chamber.l_main_y/2, xmax = chamber.l_main_x/2,
+                           xmin = chamber.l_main_int_x, color = 'red', lw = lw)
+        axc.hlines(y = -chamber.l_main_y/2, xmin = -chamber.l_main_x/2,
+                          xmax = -chamber.l_main_int_x, color = 'red', lw = lw)
+        axc.hlines(y = -chamber.l_main_y/2, xmax = chamber.l_main_x/2,
+                           xmin = chamber.l_main_int_x, color = 'red', lw = lw)
+        axc.hlines(y = chamber.ycen_up - chamber.l_main_int_y, 
+                   xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, 
+                                                        color = 'red', lw = lw)
+        axc.hlines(y = chamber.ycen_down + chamber.l_main_int_y, 
+                   xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, 
+                                                        color = 'red', lw = lw)
+ 
+
+        axs[0].set_xlabel('x [m]')
+        axs[0].set_ylabel('y [m]')
+        axs[0].set_title('e- density')
+        fig.colorbar(im1, ax = axs[0])
+        im2 = axs[1].imshow(d[int(Nx/2), :, :], cmap = 'jet', 
+                            origin = 'lower', 
+                            vmin = 0.2*np.min(d2[int(Nx/2), :, :]), 
+                            vmax = 0.8*np.max(d2[int(Nx/2), :, :]),
+                            extent=[chamber.zmin, chamber.zmax, 
+                                    chamber.ymin, chamber.ymax], 
+                            aspect = 'auto')
+        lw = 2
+        axc = axs[1]
+        axc.hlines(y = chamber.l_beam_pipe/2, xmin = chamber.zmin, 
+                            xmax = -chamber.l_main_z/2, color = 'red', lw = lw)
+        axc.hlines(y = -chamber.l_beam_pipe/2, xmin = chamber.zmin, 
+                            xmax = -chamber.l_main_z/2, color = 'red', lw = lw)
+        axc.hlines(y = chamber.l_beam_pipe/2, xmax = chamber.zmax, 
+                             xmin = chamber.l_main_z/2, color = 'red', lw = lw)
+        axc.hlines(y = -chamber.l_beam_pipe/2, xmax = chamber.zmax, 
+                             xmin = chamber.l_main_z/2, color = 'red', lw = lw)
+        axc.hlines(y = chamber.ycen_up-chamber.l_main_int_y, 
+                   xmin = -chamber.l_main_int_z, xmax = chamber.l_main_int_z,
+                   color = 'red', lw = lw)
+        axc.hlines(y = chamber.ycen_down+chamber.l_main_int_y, 
+                   xmin = -chamber.l_main_int_z, xmax = chamber.l_main_int_z, 
+                   color = 'red', lw = lw)
+        axc.hlines(y = chamber.l_main_y/2, xmin = -chamber.l_main_z/2, 
+                          xmax = -chamber.l_main_int_z, color = 'red', lw = lw)
+        axc.hlines(y = -chamber.l_main_y/2, xmin = -chamber.l_main_z/2, 
+                          xmax = -chamber.l_main_int_z, color = 'red', lw = lw)
+        axc.hlines(y = chamber.l_main_y/2, xmax = chamber.l_main_z/2, 
+                           xmin = chamber.l_main_int_z, color = 'red', lw = lw)
+        axc.hlines(y = -chamber.l_main_y/2, xmax = chamber.l_main_int_z, 
+                           xmin = chamber.l_main_z/2, color = 'red', lw = lw)
+      
+        axc.vlines(x = -chamber.l_main_z/2, ymin = chamber.l_beam_pipe/2,
+                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.vlines(x = -chamber.l_main_z/2, ymax = -chamber.l_beam_pipe/2,
+                            ymin = -chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.vlines(x = -chamber.l_main_int_z, ymin = chamber.l_beam_pipe/2,
+                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.vlines(x = -chamber.l_main_int_z, ymax = -chamber.l_beam_pipe/2,
+                            ymin = -chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.vlines(x = chamber.l_main_int_z, ymax = chamber.l_main_y/2,
+                   ymin = chamber.ycen_up - chamber.l_main_int_y, 
+                                                        color = 'red', lw = lw)
+        axc.vlines(x = chamber.l_main_int_z, ymin = -chamber.l_main_y/2,
+                   ymax = chamber.ycen_down + chamber.l_main_int_y, 
+                                                        color = 'red', lw = lw)
+        axc.vlines(x = chamber.l_main_z/2, ymin = chamber.l_beam_pipe/2,
+                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.vlines(x = chamber.l_main_z/2, ymax = -chamber.l_beam_pipe/2,
+                            ymin = -chamber.l_main_y/2, color = 'red', lw = lw)
+
+        axs[1].set_xlabel('z [m]')
+        axs[1].set_ylabel('y [m]')
+        axs[1].set_title('e- density')
+        fig.colorbar(im2, ax = axs[1])
+
+        figname = self.images_dir + '/%d.png' %int(self.n_step)
+        plt.savefig(figname)
+
+
 
 kwargs = {'enable_trap': enable_trap,
 	'z_length': 1.,
@@ -91,6 +205,7 @@ kwargs = {'enable_trap': enable_trap,
     'flag_relativ_tracking': True,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
+    'custom_plot': plots_crab,
 }
 
 sim = warp_pyecloud_sim(**kwargs)
