@@ -165,15 +165,16 @@ class CrabCavity:
         box3 = picmi.warp.Box(zsize = self.l_main_z,
                               xsize = self.l_main_x,
                               ysize= self.l_main_y, condid = condid)
-        ycen1 = self.l_beam_pipe/2 + self.l_main_int_y
-        ycen2 = -ycen1
+
+        self.ycen_up = self.l_beam_pipe/2 + self.l_main_int_y
+        self.ycen_down = - self.ycen_up
         box4 = picmi.warp.Box(zsize = 2*self.l_main_int_z, 
                               xsize = 2*self.l_main_int_x, 
-                              ysize = 2*self.l_main_int_y, ycent=ycen1, 
+                              ysize = 2*self.l_main_int_y, ycent=self.ycen_up, 
                               condid = condid)
         box5 = picmi.warp.Box(zsize = 2*self.l_main_int_z, 
                               xsize = 2*self.l_main_int_x, 
-                              ysize = 2*self.l_main_int_y, ycent=ycen2, 
+                              ysize = 2*self.l_main_int_y, ycent=self.ycen_down, 
                               condid = condid)
 
         self.conductors = box1 - box2 - box3 + box4 + box5
