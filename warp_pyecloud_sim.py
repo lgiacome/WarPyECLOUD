@@ -322,6 +322,7 @@ class warp_pyecloud_sim:
         while Nout>0:
             x0[flag_out] = random.uniform(lower_bound[0],upper_bound[0],Nout)
             y0[flag_out] = random.uniform(lower_bound[1],upper_bound[1],Nout)
+            z0[flag_out] = random.uniform(lower_bound[2],upper_bound[2],Nout)
 
             flag_out = chamber.is_outside(x0, y0, z0)
             Nout = np.sum(flag_out)
