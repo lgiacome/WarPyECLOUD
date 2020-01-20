@@ -1,13 +1,10 @@
 import sys
 import os
-<<<<<<< HEAD
 from pathlib import Path
-=======
->>>>>>> d5f6dca33d06c7540f3bbf5d7cedbcd6c0fd26f0
 from warp import *
 from warp import picmi
 
-BIN = os.path.expanduser("../../")
+BIN = os.path.expanduser("/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD")
 if BIN not in sys.path:
     sys.path.append(BIN)
 
@@ -43,15 +40,16 @@ sigmat= 1.000000e-09/4.
 max_z = 0.3
 
 # Paths for the fields
-fields_folder = str(Path(os.getcwd()).parent.parent)
+fields_folder = str(Path(os.getcwd()).parent.parent.parent.parent)
 efield_path = fields_folder + '/efield.txt'
 hfield_path = fields_folder + '/hfield.txt'
 
 chamber = CrabCavity(-max_z, max_z)
-E_field_max = 57e6
+E_field_max = 45000000,
+print('E_field_max = %de6' %E_field_max)
 lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
                           hfield_path = hfield_path)
-n_bunches = 50
+n_bunches = 25
 
 kwargs = {'enable_trap': enable_trap,
 	'z_length': 1.,
@@ -82,12 +80,12 @@ kwargs = {'enable_trap': enable_trap,
     'N_mp_target': N_mp_max/3,
 	'flag_checkpointing': True,
 	'checkpoints': np.linspace(1, n_bunches, n_bunches),
-    'temps_filename': 'complete_temp.mat',
+	'temps_filename': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_45.0/complete_temp.mat',
     'flag_output': True,
     'bunch_macro_particles': 1e5,
     't_offs': 3*sigmat+1e-10,
-    'output_filename': 'complete_out.mat',
-    'images_dir': 'images',
+	'output_filename': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_45.0/complete_out.mat',
+	'images_dir': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_45.0/images',
     'flag_relativ_tracking': True,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
