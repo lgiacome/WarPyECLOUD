@@ -1,5 +1,6 @@
 import sys
 import os
+from pathlib import Path
 from warp import *
 from warp import picmi
 
@@ -36,8 +37,17 @@ sigmax = np.sqrt(beta_x*nemittx/(beam_gamma*beam_beta))
 sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
 sigmat= 1.000000e-09/4.
 max_z = 0.3
+
+# Paths for the fields
+fields_folder = str(Path(os.getcwd()).parent.parent)
+efield_path = fields_folder + '/efield.txt'
+hfield_path = fields_folder + '/hfield.txt'
+
 chamber = CrabCavity(-max_z, max_z)
-lattice_elem = CrabFields(max_z, max_rescale = 57e6)
+E_field_max = 0 #57e6
+lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path,
+                          hfield_path = hfield_path)
+
 n_bunches = 10
 
 kwargs = {'enable_trap': enable_trap,
@@ -80,6 +90,7 @@ kwargs = {'enable_trap': enable_trap,
     'flag_relativ_tracking': True,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
+    'stride_imgs': 1,
 }
 
 sim = warp_pyecloud_sim(**kwargs)
