@@ -45,7 +45,7 @@ class Saver:
         dict_out_temp['y_mp'] = np.concatenate((secelecw.gety(),
                                                 elecbw.gety()))
         dict_out_temp['z_mp'] = np.concatenate((secelecw.getz(),
-                                                elecbw.gety()))
+                                                elecbw.getz()))
         dict_out_temp['vx_mp'] = np.concatenate((secelecw.getvx(),
                                                  elecbw.getvx()))
         dict_out_temp['vy_mp'] = np.concatenate((secelecw.getvy(),
