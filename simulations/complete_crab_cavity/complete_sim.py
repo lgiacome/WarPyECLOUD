@@ -44,12 +44,20 @@ efield_path = fields_folder + '/efield.txt'
 hfield_path = fields_folder + '/hfield.txt'
 
 chamber = CrabCavity(-max_z, max_z)
-E_field_max = 57e6
+E_field_max = 5e6 #57
 lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
                           hfield_path = hfield_path)
-n_bunches = 50
+n_bunches = 1 
 
 def plots_crab(self, l_force = 0):
+    fontsz = 14
+    plt.rcParams['axes.labelsize'] = fontsz
+    plt.rcParams['axes.titlesize'] = fontsz
+    plt.rcParams['xtick.labelsize'] = fontsz
+    plt.rcParams['ytick.labelsize'] = fontsz
+    plt.rcParams['legend.fontsize'] = fontsz
+    plt.rcParams['legend.title_fontsize'] = fontsz
+
     chamber = self.chamber
     if l_force or self.n_step%self.stride_imgs == 0:
         plt.close()
@@ -206,6 +214,7 @@ kwargs = {'enable_trap': enable_trap,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
     'custom_plot': plots_crab,
+    'stride_imgs': 1
 }
 
 sim = warp_pyecloud_sim(**kwargs)
