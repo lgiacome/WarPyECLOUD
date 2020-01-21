@@ -63,8 +63,8 @@ def plots_crab(self, l_force = 0):
     if l_force or self.n_step%self.stride_imgs == 0:
         plt.close()
         (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
-        fig, axs = plt.subplots(1, 2, figsize = (12, 5))
-        fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
+        fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
+        fig.subplots_adjust(left = 0.1, bottom = 0.1, right = 0.97, 
                             top = 0.94, wspace = 0.15)
         d = (self.secelec.wspecies.get_density()
            + self.elecb.wspecies.get_density()
