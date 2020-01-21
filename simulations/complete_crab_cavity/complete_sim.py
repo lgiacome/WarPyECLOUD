@@ -20,9 +20,9 @@ N_mp_max = 6000000
 init_num_elecs = 2*10**7
 dh = 3.e-4
 
-nx = 200 
-ny = 200 
-nz = 100
+nx = 200/4 
+ny = 200/4 
+nz = 100/4
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -45,12 +45,13 @@ hfield_path = fields_folder + '/hfield.txt'
 
 chamber = CrabCavity(-max_z, max_z)
 E_field_max = 5e6 #57
-lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
-                          hfield_path = hfield_path)
+#lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
+#                          hfield_path = hfield_path)
+lattice_elem = None
 n_bunches = 1 
 
 def plots_crab(self, l_force = 0):
-    fontsz = 14
+    fontsz = 16
     plt.rcParams['axes.labelsize'] = fontsz
     plt.rcParams['axes.titlesize'] = fontsz
     plt.rcParams['xtick.labelsize'] = fontsz
@@ -62,7 +63,7 @@ def plots_crab(self, l_force = 0):
     if l_force or self.n_step%self.stride_imgs == 0:
         plt.close()
         (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
-        fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
+        fig, axs = plt.subplots(1, 2, figsize = (12, 5))
         fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
                             top = 0.94, wspace = 0.15)
         d = (self.secelec.wspecies.get_density()
@@ -120,7 +121,7 @@ def plots_crab(self, l_force = 0):
                             vmax = 0.8*np.max(d2[int(Nx/2), :, :]),
                             extent=[chamber.zmin, chamber.zmax, 
                                     chamber.ymin, chamber.ymax], 
-                            aspect = 'auto')
+                            aspect = 'equal')
         lw = 2
         axc = axs[1]
         axc.hlines(y = chamber.l_beam_pipe/2, xmin = chamber.zmin, 
@@ -164,6 +165,7 @@ def plots_crab(self, l_force = 0):
                              ymax = chamber.l_main_y/2, color = 'red', lw = lw)
         axc.vlines(x = chamber.l_main_z/2, ymax = -chamber.l_beam_pipe/2,
                             ymin = -chamber.l_main_y/2, color = 'red', lw = lw)
+        axc.set_aspect((chamber.zmax-chamber.zmin)/(chamber.xmax-chamber.xmin))
 
         axs[1].set_xlabel('z [m]')
         axs[1].set_ylabel('y [m]')
