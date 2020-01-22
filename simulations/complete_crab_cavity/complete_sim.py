@@ -20,9 +20,9 @@ N_mp_max = 6000000
 init_num_elecs = 2*10**7
 dh = 3.e-4
 
-nx = 200/4 
-ny = 200/4 
-nz = 100/4
+nx = 200 
+ny = 200
+nz = 100
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -45,9 +45,9 @@ hfield_path = fields_folder + '/hfield.txt'
 
 chamber = CrabCavity(-max_z, max_z)
 E_field_max = 5e6 #57
-#lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
-#                          hfield_path = hfield_path)
-lattice_elem = None
+lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
+                          hfield_path = hfield_path)
+
 n_bunches = 1 
 
 def plots_crab(self, l_force = 0):
