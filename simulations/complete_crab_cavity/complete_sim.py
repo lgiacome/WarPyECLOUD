@@ -48,6 +48,7 @@ E_field_max = 5e6 #57
 lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
                           hfield_path = hfield_path)
 
+
 n_bunches = 1 
 
 def plots_crab(self, l_force = 0):
@@ -64,7 +65,7 @@ def plots_crab(self, l_force = 0):
         plt.close()
         (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
         fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
-        fig.subplots_adjust(left = 0.1, bottom = 0.1, right = 0.97, 
+        fig.subplots_adjust(left = 0.15, bottom = 0.1, right = 0.97, 
                             top = 0.94, wspace = 0.15)
         d = (self.secelec.wspecies.get_density()
            + self.elecb.wspecies.get_density()
@@ -172,7 +173,7 @@ def plots_crab(self, l_force = 0):
         axs[1].set_title('e- density')
         fig.colorbar(im2, ax = axs[1])
 
-        figname = self.images_dir + '/%d.png' %int(self.n_step)
+        figname = self.images_dir + '/' + repr(int(self.n_step)).zfill(4) + '.png'
         plt.savefig(figname)
 
 
