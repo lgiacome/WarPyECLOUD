@@ -111,7 +111,8 @@ class warp_pyecloud_sim:
         if self.flag_checkpointing and os.path.exists(self.temps_filename): 
             electron_background_dist = self.load_elec_density()
         else:
-            electron_background_dist = self.init_uniform_density() 
+            if init_num_elecs > 0: 
+                electron_background_dist = self.init_uniform_density() 
         self.flag_first_pass = True
 
         self.elecb = picmi.Species(particle_type = 'electron',
