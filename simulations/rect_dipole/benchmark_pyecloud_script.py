@@ -1,5 +1,6 @@
 import sys
 import os
+from warp import picmi
 
 BIN = os.path.expanduser("../../")
 if BIN not in sys.path:
@@ -11,13 +12,13 @@ from chamber import RectChamber
 from lattice_elements import Dipole
 import matplotlib.pyplot as plt
 
-enable_trap = False
+enable_trap = True
 
 nz = 100
 N_mp_max_slice = 60000
 init_num_elecs_slice = 2*10**5
 dh = 3.e-4
-width = 2*35e-3
+width = 2*23e-3
 height = 2*18e-3
 z_length = 1.
 z_start = -z_length/2
@@ -33,20 +34,69 @@ ny = int(np.ceil(height/dh))
 # Compute sigmas
 nemittx = 2.5e-6
 nemitty = nemittx
-beta_x = 100
-beta_y = 100
+beta_x = 85
+beta_y = 90
 
 beam_gamma = 479.
 beam_beta = np.sqrt(1-1/(beam_gamma**2))
 sigmax = np.sqrt(beta_x*nemittx/(beam_gamma*beam_beta))
 sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
+n_bunches = 50
 print(sigmax)
+
+def dipole_plots(self, l_force=0):
+    fontsz = 16
+    plt.rcParams['axes.labelsize'] = fontsz
+    plt.rcParams['axes.titlesize'] = fontsz
+    plt.rcParams['xtick.labelsize'] = fontsz
+    plt.rcParams['ytick.labelsize'] = fontsz
+    plt.rcParams['legend.fontsize'] = fontsz
+    plt.rcParams['legend.title_fontsize'] = fontsz
+
+    chamber = self.chamber
+    if l_force or self.n_step%self.stride_imgs == 0:
+        plt.close()
+        (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
+        fig, axs = plt.subplots(1, 2, figsize = (13.5, 5))
+        fig.subplots_adjust(left = 0.1, bottom = 0.07, right = 0.99,
+                            top = 0.87)
+        d = (self.secelec.wspecies.get_density()
+           + self.elecb.wspecies.get_density()
+           + self.beam.wspecies.get_density())
+        d2  = (self.secelec.wspecies.get_density()
+            + self.elecb.wspecies.get_density())
+        im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet',
+              origin = 'lower', vmin = 0,
+              vmax = 1e13,
+              extent = [chamber.xmin, chamber.xmax ,
+                        chamber.ymin, chamber.ymax])
+        axs[0].set_xlabel('x [m]')
+        axs[0].set_ylabel('y [m]')
+        axs[0].set_title('rho')
+        fig.colorbar(im1, ax = axs[0])
+        im2 = axs[1].imshow(d[int(Nx/2), :, :], cmap = 'jet',
+                            origin = 'lower',
+                            vmin = 0,
+                            vmax = 1e13,
+                            extent=[chamber.zmin, chamber.zmax,
+                                    chamber.ymin, chamber.ymax])
+
+        axs[1].set_aspect((chamber.zmax-chamber.zmin)/(chamber.xmax-chamber.xmin))
+        axs[1].set_xlabel('z [m]')
+        axs[1].set_ylabel('y [m]')
+        axs[1].set_title('rho')
+        fig.suptitle('t = %1.6e' %picmi.warp.top.time, fontsize=fontsz)
+        fig.colorbar(im2, ax = axs[1])
+
+        figname = 'images_rect_dipole_new'+ '/' + repr(int(self.n_step)).zfill(4) + '.png'
+        plt.savefig(figname)
+
 kwargs = {'enable_trap': enable_trap,
 	'z_length': 1.,
 	'nx': nx,
 	'ny': ny, 
 	'nz': nz,
-	'n_bunches': 50,
+	'n_bunches': n_bunches,
     'b_spac' : 25e-9,
     'beam_gamma': beam_gamma, 
 	'sigmax': sigmax,
@@ -68,8 +118,8 @@ kwargs = {'enable_trap': enable_trap,
     'secondary_angle_distribution': 'cosine_3D', 
     'N_mp_max': N_mp_max_slice*nz,
     'N_mp_target': N_mp_max_slice/3*nz,
-	'flag_checkpointing': False,
-	'checkpoints': np.linspace(1, 30, 30),
+	'flag_checkpointing': True,
+	'checkpoints': np.linspace(1, n_bunches, n_bunches),
     'temps_filename': 'rect_dipole_temp.mat',
     'flag_output': True,
     'bunch_macro_particles': 1e7,
@@ -80,7 +130,8 @@ kwargs = {'enable_trap': enable_trap,
     'flag_relativ_tracking': True,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
-    'images_dir': 'images_rect_dipole'
+    'images_dir': 'images_rect_dipole',
+    'custom_plot': dipole_plots
 }
 
 sim = warp_pyecloud_sim(**kwargs)
