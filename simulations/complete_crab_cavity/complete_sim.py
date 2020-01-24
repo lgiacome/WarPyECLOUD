@@ -63,17 +63,17 @@ def plots_crab(self, l_force = 0):
     if l_force or self.n_step%self.stride_imgs == 0:
         plt.close()
         (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
-        fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
-        fig.subplots_adjust(left = 0.1, bottom = 0.1, right = 0.99, 
-                            top = 0.94)
+        fig, axs = plt.subplots(1, 2, figsize = (12, 5))
+        fig.subplots_adjust(left = 0.1, bottom = 0.07, right = 0.99, 
+                            top = 0.87)
         d = (self.secelec.wspecies.get_density()
            + self.elecb.wspecies.get_density()
            + self.beam.wspecies.get_density())
         d2  = (self.secelec.wspecies.get_density() 
             + self.elecb.wspecies.get_density())
         im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet', 
-              origin = 'lower', vmin = 0.2*np.min(d2[:, :, int(Nz/2)]), 
-              vmax = 0.8*np.max(d2[:, :, int(Nz/2)]), 
+              origin = 'lower', vmin = 0, 
+              vmax = 5e9, 
               extent = [chamber.xmin, chamber.xmax , 
                         chamber.ymin, chamber.ymax])
 
@@ -113,12 +113,12 @@ def plots_crab(self, l_force = 0):
 
         axs[0].set_xlabel('x [m]')
         axs[0].set_ylabel('y [m]')
-        axs[0].set_title('e- density')
+        axs[0].set_title('rho')
         fig.colorbar(im1, ax = axs[0])
         im2 = axs[1].imshow(d[int(Nx/2), :, :], cmap = 'jet', 
                             origin = 'lower', 
-                            vmin = 0.2*np.min(d2[int(Nx/2), :, :]), 
-                            vmax = 0.8*np.max(d2[int(Nx/2), :, :]),
+                            vmin = 0, 
+                            vmax = 5e9,
                             extent=[chamber.zmin, chamber.zmax, 
                                     chamber.ymin, chamber.ymax], 
                             aspect = 'equal')
@@ -169,9 +169,9 @@ def plots_crab(self, l_force = 0):
 
         axs[1].set_xlabel('z [m]')
         axs[1].set_ylabel('y [m]')
-        axs[1].set_title('e- density')
+        axs[1].set_title('rho')
         fig.colorbar(im2, ax = axs[1])
-
+        fig.suptitle('t = %1.6e' %picmi.warp.top.time, fontsize=fontsz)
         figname = self.images_dir + '/' + repr(int(self.n_step)).zfill(4) + '.png'
         plt.savefig(figname)
 
