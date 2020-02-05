@@ -37,23 +37,16 @@ class Saver:
             self.bins = dict_init_dist['bins']
             self.b_pass = dict_init_dist['b_pass']  
     
-    def save_checkpoint(self, b_pass, elecbw, secelecw):
+    def save_checkpoint(self, b_pass, elecbw):
         dict_out_temp = {}
         print('Saving a checkpoint!')
-        dict_out_temp['x_mp'] = np.concatenate((secelecw.getx(),
-                                                elecbw.getx()))
-        dict_out_temp['y_mp'] = np.concatenate((secelecw.gety(),
-                                                elecbw.gety()))
-        dict_out_temp['z_mp'] = np.concatenate((secelecw.getz(),
-                                                elecbw.getz()))
-        dict_out_temp['vx_mp'] = np.concatenate((secelecw.getvx(),
-                                                 elecbw.getvx()))
-        dict_out_temp['vy_mp'] = np.concatenate((secelecw.getvy(),
-                                                 elecbw.getvy()))
-        dict_out_temp['vz_mp'] = np.concatenate((secelecw.getvz(),
-                                                 elecbw.getvz()))
-        dict_out_temp['nel_mp'] = np.concatenate((secelecw.getw(),
-                                                  elecbw.getw()))
+        dict_out_temp['x_mp'] = elecbw.getx()
+        dict_out_temp['y_mp'] = elecbw.gety()
+        dict_out_temp['z_mp'] = elecbw.getz()
+        dict_out_temp['vx_mp'] = elecbw.getvx()
+        dict_out_temp['vy_mp'] = elecbw.getvy()
+        dict_out_temp['vz_mp'] = elecbw.getvz()
+        dict_out_temp['nel_mp'] = elecbw.getw()
         if self.flag_output:
             dict_out_temp['numelecs'] = self.numelecs
             dict_out_temp['numelecs_tot'] = self.numelecs_tot
@@ -65,13 +58,10 @@ class Saver:
 
         sio.savemat(self.temps_filename, dict_out_temp)
 
-    def update_outputs(self, sw, ew, nz, n_step):
-        secelec_w = sw.getw()
+    def update_outputs(self, ew, nz, n_step):
         elecb_w = ew.getw()
-        elecs_density = (sw.get_density(l_dividebyvolume=0)[:,:,int(nz/2.)] 
-                       + ew.get_density(l_dividebyvolume=0)[:,:,int(nz/2.)])
-        elecs_density_tot = (sw.get_density(l_dividebyvolume=0)[:,:,:] 
-                           + ew.get_density(l_dividebyvolume=0)[:,:,:])
+        elecs_density = ew.get_density(l_dividebyvolume=0)[:,:,int(nz/2.)]
+        elecs_density_tot = ew.get_density(l_dividebyvolume=0)[:,:,:]
         # resize outputs if needed, this could happen in the event
         # of a restart with a different simulation length
         if self.tot_nsteps > len(self.numelecs):
@@ -82,18 +72,18 @@ class Saver:
 
         self.numelecs[n_step] = np.sum(elecs_density)
         self.numelecs_tot[n_step] = np.sum(elecs_density_tot)
-        self.N_mp[n_step] = len(secelec_w)+len(elecb_w)
+        self.N_mp[n_step] = len(elecb_w)
 
-    def dump_outputs(self, xmin, xmax, secelecw, b_pass):
+    def dump_outputs(self, xmin, xmax, elecbw, b_pass):
         dict_out = {}
         dict_out['numelecs'] = self.numelecs
         dict_out['numelecs_tot'] = self.numelecs_tot
         dict_out['N_mp'] = self.N_mp
         # Compute the x-position histogram
-        (self.xhist[b_pass-1], self.bins) = np.histogram(secelecw.getx(), 
+        (self.xhist[b_pass-1], self.bins) = np.histogram(elecbw.getx(), 
                                                      range = (xmin,xmax), 
                                                      bins = self.nbins, 
-                                                     weights = secelecw.getw(), 
+                                                     weights = elecbw.getw(), 
                                                      density = False)
         dict_out['bins'] = self.bins
         dict_out['xhist'] = self.xhist
