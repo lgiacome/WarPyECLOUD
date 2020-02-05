@@ -119,7 +119,7 @@ class warp_pyecloud_sim:
 
         self.flag_first_pass = True
 
-        self.elecb = picmi.Species(particle_type = 'electron',
+        self.ecloud = picmi.Species(particle_type = 'electron',
                               particle_shape = 'linear',
                               name = 'Electron background',
                               initial_distribution = electron_background_dist)
@@ -169,11 +169,11 @@ class warp_pyecloud_sim:
         sim.add_species(self.beam, layout = None,
                         initialize_self_field = solver == 'EM')
 
-        self.elecb_layout = picmi.PseudoRandomLayout(
+        self.ecloud_layout = picmi.PseudoRandomLayout(
                                           n_macroparticles = init_num_elecs_mp,
                                           seed = 3)
 
-        sim.add_species(self.elecb, layout = self.elecb_layout,
+        sim.add_species(self.ecloud, layout = self.ecloud_layout,
                         initialize_self_field = solver == 'EM')
 
         picmi.warp.installuserinjection(self.bunched_beam)
@@ -193,8 +193,8 @@ class warp_pyecloud_sim:
                         pyecloud_fact_clean = pyecloud_fact_clean,
                         pyecloud_fact_split = pyecloud_fact_split)
 
-        self.sec.add(incident_species = self.elecb.wspecies,
-                emitted_species  = self.elecb.wspecies,
+        self.sec.add(incident_species = self.ecloud.wspecies,
+                emitted_species  = self.ecloud.wspecies,
                 conductor        = sim.conductors)
 
         if N_subcycle is not None:
@@ -233,23 +233,23 @@ class warp_pyecloud_sim:
 
                 self.t_pass_0 = time.time()
                 # Perform regeneration if needed
-                if self.elecb.wspecies.getn() > self.N_mp_max:
+                if self.ecloud.wspecies.getn() > self.N_mp_max:
                     print('Number of macroparticles: %d' 
-                          %(self.elecb.wspecies.getn()))
+                          %(self.ecloud.wspecies.getn()))
                     print('MAXIMUM LIMIT OF MPS HAS BEEN RACHED')
                     perform_regeneration(self.N_mp_target, 
-                                         self.elecb.wspecies, self.sec)
+                                         self.ecloud.wspecies, self.sec)
                  
                 # Save stuff if checkpoint
                 if (self.flag_checkpointing 
                    and np.any(self.checkpoints == self.b_pass)):
                     self.saver.save_checkpoint(self.b_pass, 
-                                               self.elecb.wspecies)
+                                               self.ecloud.wspecies)
 
                 print('===========================')
                 print('Bunch passage: %d' %(self.b_pass))
-                print('Number of electrons: %d' %(np.sum(self.elecb.wspecies.getw())))
-                print('Number of macroparticles: %d' %(self.elecb.wspecies.getn()))
+                print('Number of electrons: %d' %(np.sum(self.ecloud.wspecies.getw())))
+                print('Number of macroparticles: %d' %(self.ecloud.wspecies.getn()))
                 if not self.flag_first_pass:
                     print('Previous passage took %ds' %self.t_pass)
 
@@ -263,17 +263,17 @@ class warp_pyecloud_sim:
             # Dump outputs
             if self.flag_output and self.n_step%self.stride_output == 0:
                 self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax, 
-                                        self.elecb.wspecies, self.b_pass)
+                                        self.ecloud.wspecies, self.b_pass)
 
             # Perform a step
             sys.stdout = self.text_trap
             picmi.warp.step(1)
             sys.stdout = self.original
-            #print(sum(self.elecb.wspecies.getw()))
+            #print(sum(self.ecloud.wspecies.getw()))
 
             # Store stuff to be saved
             if self.flag_output:
-                self.saver.update_outputs(self.elecb.wspecies, self.nz,
+                self.saver.update_outputs(self.ecloud.wspecies, self.nz,
                                           self.n_step) 
             self.n_step += 1
 
@@ -377,13 +377,13 @@ class warp_pyecloud_sim:
         chamber = self.chamber
         if l_force or self.n_step%self.stride_imgs == 0:
             plt.close()
-            (Nx, Ny, Nz) = np.shape(self.elecb.wspecies.get_density())
+            (Nx, Ny, Nz) = np.shape(self.ecloud.wspecies.get_density())
             fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
             fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
                                 top = 0.94, wspace = 0.15)
-            d = (self.elecb.wspecies.get_density()
+            d = (self.ecloud.wspecies.get_density()
                + self.beam.wspecies.get_density())
-            d2  = (self.elecb.wspecies.get_density())
+            d2  = (self.ecloud.wspecies.get_density())
             im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet', 
                   origin = 'lower', vmin = 0.2*np.min(d2[:, :, int(Nz/2)]), 
                   vmax = 0.8*np.max(d2[:, :, int(Nz/2)]), 
