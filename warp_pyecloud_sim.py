@@ -16,7 +16,7 @@ from saver import Saver
 
 class warp_pyecloud_sim:
 
-    def __init__(self, z_length = None, nx = None, ny = None, nz =None, 
+    def __init__(self, nx = None, ny = None, nz =None, 
                  solver_type = 'ES', n_bunches = None, b_spac = None, 
                  beam_gamma = None, sigmax = None, sigmay = None, 
                  sigmat = None, bunch_intensity = None, init_num_elecs = None,
@@ -112,7 +112,11 @@ class warp_pyecloud_sim:
             electron_background_dist = self.load_elec_density()
         else:
             if init_num_elecs > 0: 
-                electron_background_dist = self.init_uniform_density() 
+                electron_background_dist = self.init_uniform_density()
+            else:
+                electron_background_dist = None
+                self.b_pass = 0
+
         self.flag_first_pass = True
 
         self.elecb = picmi.Species(particle_type = 'electron',
