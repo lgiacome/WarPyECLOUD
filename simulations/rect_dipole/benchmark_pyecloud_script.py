@@ -41,7 +41,7 @@ beam_gamma = 479.
 beam_beta = np.sqrt(1-1/(beam_gamma**2))
 sigmax = np.sqrt(beta_x*nemittx/(beam_gamma*beam_beta))
 sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
-n_bunches = 10
+n_bunches = 50
 print(sigmax)
 
 def dipole_plots(self, l_force=0):
@@ -56,13 +56,13 @@ def dipole_plots(self, l_force=0):
     chamber = self.chamber
     if l_force or self.n_step%self.stride_imgs == 0:
         plt.close()
-        (Nx, Ny, Nz) = np.shape(self.elecb.wspecies.get_density())
+        (Nx, Ny, Nz) = np.shape(self.ecloud.wspecies.get_density())
         fig, axs = plt.subplots(1, 2, figsize = (13.5, 5))
         fig.subplots_adjust(left = 0.1, bottom = 0.07, right = 0.99,
                             top = 0.87)
-        d = (self.elecb.wspecies.get_density()
+        d = (self.ecloud.wspecies.get_density()
            + self.beam.wspecies.get_density())
-        d2  = (self.elecb.wspecies.get_density())
+        d2  = (self.ecloud.wspecies.get_density())
         im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet',
               origin = 'lower', vmin = 0,
               vmax = 1e13,
@@ -90,7 +90,6 @@ def dipole_plots(self, l_force=0):
         plt.savefig(figname)
 
 kwargs = {'enable_trap': enable_trap,
-	'z_length': 1.,
 	'nx': nx,
 	'ny': ny, 
 	'nz': nz,
@@ -129,7 +128,8 @@ kwargs = {'enable_trap': enable_trap,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
     'images_dir': 'images_rect_dipole',
-    'custom_plot': dipole_plots
+    'custom_plot': dipole_plots,
+    'stride_imgs': 10000,
 }
 
 sim = warp_pyecloud_sim(**kwargs)
