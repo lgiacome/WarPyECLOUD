@@ -40,13 +40,13 @@ sigmat= 1.000000e-09/4.
 max_z = 0.3
 
 # Paths for the fields
-fields_folder = str(Path(os.getcwd()).parent.parent.parent.parent)
+fields_folder = str(Path(os.getcwd()).parent.parent)
 efield_path = fields_folder + '/efield.txt'
 hfield_path = fields_folder + '/hfield.txt'
 
 chamber = CrabCavity(-max_z, max_z)
 E_field_max = 55000000,
-print('E_field_max = %de6' %E_field_max)
+print('E_field_max = %d' %E_field_max)
 lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
                           hfield_path = hfield_path)
 n_bunches = 25

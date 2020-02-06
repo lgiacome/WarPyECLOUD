@@ -98,7 +98,7 @@ class warp_pyecloud_sim:
 
         self.bunch_rms_size = [sigmax, sigmay, sigmaz]
         self.bunch_rms_velocity = [0., 0., 0.]
-        self.bunch_centroid_position = [0, 0, chamber.zmin + 10e-3]
+        self.bunch_centroid_position = [0, 0, chamber.zmin+1e-4]
         self.bunch_centroid_velocity = [0.,0., beam_gamma*picmi.constants.c]
 
         # Instantiate beam
@@ -159,7 +159,6 @@ class warp_pyecloud_sim:
                                           warp_type_rz_depose = 0,
                                           warp_l_setcowancoefs = True,
                                           warp_l_getrho = False)
-
         # Setup simulation
         sim = picmi.Simulation(solver = solver, verbose = 1, cfl = 1.0,
                                warp_initialize_solver_after_generate = 1)
