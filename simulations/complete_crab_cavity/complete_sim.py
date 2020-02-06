@@ -45,7 +45,7 @@ hfield_path = fields_folder + '/hfield.txt'
 
 chamber = CrabCavity(-max_z, max_z)
 E_field_max = 5e6 #57
-lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield_path, 
+lattice_elem = CrabFields(-max_z, max_rescale = E_field_max, efield_path = efield_path, 
                           hfield_path = hfield_path)
 
 n_bunches = 1 

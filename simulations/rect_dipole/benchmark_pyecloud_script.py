@@ -17,7 +17,7 @@ enable_trap = True
 nz = 100
 N_mp_max_slice = 60000
 init_num_elecs_slice = 2*10**5
-dh = 3.e-4
+dh = 3.e-3
 width = 2*23e-3
 height = 2*18e-3
 z_length = 1.
@@ -41,7 +41,7 @@ beam_gamma = 479.
 beam_beta = np.sqrt(1-1/(beam_gamma**2))
 sigmax = np.sqrt(beta_x*nemittx/(beam_gamma*beam_beta))
 sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
-n_bunches = 50
+n_bunches = 10
 print(sigmax)
 
 def dipole_plots(self, l_force=0):
@@ -56,15 +56,13 @@ def dipole_plots(self, l_force=0):
     chamber = self.chamber
     if l_force or self.n_step%self.stride_imgs == 0:
         plt.close()
-        (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
+        (Nx, Ny, Nz) = np.shape(self.elecb.wspecies.get_density())
         fig, axs = plt.subplots(1, 2, figsize = (13.5, 5))
         fig.subplots_adjust(left = 0.1, bottom = 0.07, right = 0.99,
                             top = 0.87)
-        d = (self.secelec.wspecies.get_density()
-           + self.elecb.wspecies.get_density()
+        d = (self.elecb.wspecies.get_density()
            + self.beam.wspecies.get_density())
-        d2  = (self.secelec.wspecies.get_density()
-            + self.elecb.wspecies.get_density())
+        d2  = (self.elecb.wspecies.get_density())
         im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet',
               origin = 'lower', vmin = 0,
               vmax = 1e13,
