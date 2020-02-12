@@ -93,22 +93,20 @@ class CrabFields:
         self.Tf = 25e-9
         self.freq = 400*1e6
         self.Nt = 1000
-        self.phase_disp=0
-        delay = (chamber.zmin+1e-4)/picmi.clight + t_offs
+        self.phase_disp=np.pi/2
+        delay = (chamber.zmin+1e-4)/picmi.clight - t_offs
+
         time_array = np.linspace(0., self.Tf, self.Nt)
 
-        data_arraySinE = -np.sin((time_array-delay)*self.freq*2*np.pi+self.phase_disp)
-        data_arrayCosE = np.cos((time_array-delay)*self.freq*2*np.pi+self.phase_disp)
-        data_arraySinB = -np.sin((time_array-delay)*self.freq*2*np.pi+np.pi/2+self.phase_disp)
-        data_arrayCosB = np.sin((time_array-delay)*self.freq*2*np.pi+np.pi/2+self.phase_disp)
-
+        data_arraySin = -np.sin((time_array-delay)*self.freq*2*np.pi+self.phase_disp)
+        data_arrayCos = np.cos((time_array-delay)*self.freq*2*np.pi+self.phase_disp)
 
         # Create overlapped lattice elements to have E and B in the same region
         iReE, ReEgrid = picmi.warp.addnewegrd(self.zs, self.ze,
                                           dx = self.d, dy = self.d,
                                           xs = self.xs, ys = self.ys,
                                           time = time_array,
-                                          data = data_arrayCosE,
+                                          data = data_arrayCos,
                                           ex = self.ReExx,
                                           ey = self.ReEyy,
                                           ez = self.ReEzz)
@@ -117,7 +115,7 @@ class CrabFields:
                                           dx = self.d, dy = self.d,
                                           xs = self.xs, ys = self.ys,
                                           time = time_array,
-                                          data = data_arraySinE,
+                                          data = data_arraySin,
                                           ex = self.ImExx,
                                           ey = self.ImEyy,
                                           ez = self.ImEzz)
@@ -126,7 +124,7 @@ class CrabFields:
                                           dx = self.d, dy = self.d,
                                           xs = self.xs, ys = self.ys,
                                           time = time_array,
-                                          data = data_arrayCosB,
+                                          data = data_arrayCos,
                                           bx = self.ReBxx,
                                           by = self.ReByy,
                                           bz = self.ReBzz)
@@ -135,7 +133,7 @@ class CrabFields:
                                           dx = self.d, dy = self.d,
                                           xs = self.xs, ys = self.ys,
                                           time = time_array,
-                                          data = data_arraySinB,
+                                          data = data_arraySin,
                                           bx = self.ImBxx,
                                           by = self.ImByy,
                                           bz = self.ImBzz)
