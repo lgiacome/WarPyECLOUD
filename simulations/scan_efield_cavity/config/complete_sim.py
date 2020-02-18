@@ -52,7 +52,6 @@ lattice_elem = CrabFields(max_z, max_rescale = E_field_max, efield_path = efield
 n_bunches = 25
 
 kwargs = {'enable_trap': enable_trap,
-	'z_length': 1.,
 	'nx': nx,
 	'ny': ny, 
 	'nz': nz,
@@ -80,15 +79,17 @@ kwargs = {'enable_trap': enable_trap,
     'N_mp_target': N_mp_max/3,
 	'flag_checkpointing': True,
 	'checkpoints': np.linspace(1, n_bunches, n_bunches),
-	'temps_filename': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_55.0/complete_temp.mat',
+	'temps_filename': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_55.0/complete_temp.h5',
     'flag_output': True,
     'bunch_macro_particles': 1e5,
     't_offs': 3*sigmat+1e-10,
-	'output_filename': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_55.0/complete_out.mat',
+	'output_filename': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_55.0/complete_out.h5',
 	'images_dir': '/cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/scan_efield_cavity/simulations/complete_cavity_Emax_55.0/images',
     'flag_relativ_tracking': True,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
+    'custom_plot': plots_crab,
+    'stride_imgs': 1,
 }
 
 sim = warp_pyecloud_sim(**kwargs)

@@ -1,6 +1,7 @@
 import numpy as np
-import scipy.io as sio
 import os
+from h5py_manager import dict_of_arrays_and_scalar_from_h5, dict_to_h5
+from warp import *
 
 class Saver:
 
@@ -28,11 +29,11 @@ class Saver:
         self.bins = np.zeros(self.nbins)
 
     def restore_outputs_from_file(self):
-        dict_init_dist = sio.loadmat(self.temps_filename)
+        dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
         if self.flag_output:
-            self.numelecs = dict_init_dist['numelecs'][0]
-            self.N_mp = dict_init_dist['N_mp'][0]
-            self.numelecs_tot = dict_init_dist['numelecs_tot'][0]
+            self.numelecs = dict_init_dist['numelecs']
+            self.N_mp = dict_init_dist['N_mp']
+            self.numelecs_tot = dict_init_dist['numelecs_tot']
             self.xhist = dict_init_dist['xhist']
             self.bins = dict_init_dist['bins']
             self.b_pass = dict_init_dist['b_pass']  
@@ -56,7 +57,7 @@ class Saver:
 
         dict_out_temp['b_pass'] = b_pass 
 
-        sio.savemat(self.temps_filename, dict_out_temp)
+        dict_to_h5(dict_out_temp, self.temps_filename)
 
     def update_outputs(self, ew, nz, n_step):
         elecb_w = ew.getw()
@@ -87,4 +88,4 @@ class Saver:
                                                      density = False)
         dict_out['bins'] = self.bins
         dict_out['xhist'] = self.xhist
-        sio.savemat(self.output_filename, dict_out)
+        dict_out_temp = dict_to_h5(dict_out, self.output_filename)
