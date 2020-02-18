@@ -2,6 +2,7 @@ from perform_regeneration import perform_regeneration
 import numpy as np
 import numpy.random as random
 from warp import picmi
+from warp import *
 from scipy.stats import gaussian_kde
 from warp.particles.Secondaries import Secondaries, top, warp, time
 import matplotlib.pyplot as plt
@@ -9,13 +10,12 @@ from io import StringIO
 from scipy.constants import c as clight
 import sys
 import PyECLOUD.myfilemanager as mfm
-import scipy.io as sio
 import os
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 from saver import Saver
+from h5py_manager import dict_of_arrays_and_scalar_from_h5
 
 class warp_pyecloud_sim:
-
     def __init__(self, nx = None, ny = None, nz =None, 
                  solver_type = 'ES', n_bunches = None, b_spac = None, 
                  beam_gamma = None, sigmax = None, sigmay = None, 
@@ -29,11 +29,11 @@ class warp_pyecloud_sim:
                  N_mp_target = None, flag_checkpointing = False, 
                  checkpoints = None, flag_output = False, 
                  bunch_macro_particles = None, t_offs = None, width = None, 
-                 height = None, output_filename = 'output.mat', 
+                 height = None, output_filename = 'output.h5', 
                  flag_relativ_tracking = False, nbins = 100, radius = None, 
                  ghost = None,ghost_z = None, stride_imgs = 10, 
                  stride_output = 1000,chamber = False, lattice_elem = None, 
-                 temps_filename = 'temp_mps_info.mat', custom_plot = None,
+                 temps_filename = 'temp_mps_info.h5', custom_plot = None,
                  images_dir = None):
         
 
@@ -327,19 +327,19 @@ class warp_pyecloud_sim:
         print('#############################################################')
         print('Temp distribution found. Reloading it as initial distribution')
         print('#############################################################')
-        dict_init_dist = sio.loadmat(self.temps_filename)
+        dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
         # Load particles status
-        x0 = dict_init_dist['x_mp'][0]
-        y0 = dict_init_dist['y_mp'][0]
-        z0 = dict_init_dist['z_mp'][0]
-        vx0 = dict_init_dist['vx_mp'][0]
-        z0 = dict_init_dist['z_mp'][0]
-        vx0 = dict_init_dist['vx_mp'][0]
-        vy0 = dict_init_dist['vy_mp'][0]
-        vz0 = dict_init_dist['vz_mp'][0]
-        w0 = dict_init_dist['nel_mp'][0]
+        x0 = dict_init_dist['x_mp']
+        y0 = dict_init_dist['y_mp']
+        z0 = dict_init_dist['z_mp']
+        vx0 = dict_init_dist['vx_mp']
+        z0 = dict_init_dist['z_mp']
+        vx0 = dict_init_dist['vx_mp']
+        vy0 = dict_init_dist['vy_mp']
+        vz0 = dict_init_dist['vz_mp']
+        w0 = dict_init_dist['nel_mp']
         
-        self.b_pass = dict_init_dist['b_pass'][0][0] -1 
+        self.b_pass = dict_init_dist['b_pass'] -1 
         self.n_step = int(np.round(self.b_pass*self.b_spac/picmi.warp.top.dt)) 
 
         return picmi.ParticleListDistribution(x = x0, y = y0, z = z0, vx = vx0,
