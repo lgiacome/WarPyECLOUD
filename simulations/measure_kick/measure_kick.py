@@ -43,7 +43,7 @@ hfield_path = fields_folder + '/hfield_squared.txt'
 
 # Set up the chamber
 chamber = CrabCavity(min_z, max_z)
-E_field_max = 14.13e6
+E_field_max = 20e6
 
 # Set up the RF field
 t_offs = 3*sigmat+1e-10
@@ -70,8 +70,12 @@ def plot_kick(self, l_force=0):
     Vt = E_beam*np.tan(yp)/picmi.echarge
     plt.figure(figsize=(8,6))
     plt.plot(self.beam.wspecies.getz()-np.mean(self.beam.wspecies.getz()), Vt, 'x')
-    plt.plot(np.zeros(100), np.linspace(-3e6, 3e6,100),'r--')
-    plt.plot(np.linspace(-0.2,0.2,100), np.zeros(100), 'r--')
+    plt.plot(np.zeros(100), np.linspace(-1e6, 1e6,100),'r--')
+    plt.plot(np.linspace(-0.05,0.05,100), np.zeros(100), 'r--')
+    plt.plot(np.linspace(-0.2,0.2,100), 3.96e6*np.ones(100), 'g--')
+    plt.plot(np.linspace(-0.2,0.2,100), -3.96e6*np.ones(100), 'g--')
+    plt.plot(np.linspace(-0.2,0.2,100), 2.36e6*np.ones(100), 'm--')
+    plt.plot(np.linspace(-0.2,0.2,100), -2.36e6*np.ones(100), 'm--')
     plt.xlabel('s  [m]')
     plt.ticklabel_format(style = 'sci', axis = 'y', scilimits=(0,0))
     plt.ylabel('Deflecting Voltage  [V]')
