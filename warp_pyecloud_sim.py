@@ -229,22 +229,22 @@ class warp_pyecloud_sim:
 
             em.fields.Ex[em.nxguard : em.nxp + em.nxguard + 1,
                          em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_ex*self.scale_fac
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_ex*self.em_scale_fac
             em.fields.Ey[em.nxguard : em.nxp + em.nxguard + 1,
                          em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_ey*self.scale_fac
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_ey*self.em_scale_fac
             em.fields.Ez[em.nxguard : em.nxp + em.nxguard + 1,
                          em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_ez*self.scale_fac
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_ez*self.em_scale_fac
             em.fields.Bx[em.nxguard : em.nxp + em.nxguard + 1,
                          em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_bx*self.scale_fac
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_bx*self.em_scale_fac
             em.fields.By[em.nxguard : em.nxp + em.nxguard + 1,
                          em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_by*self.scale_fac
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_by*self.em_scale_fac
             em.fields.Bz[em.nxguard : em.nxp + em.nxguard + 1,
                          em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_bz*self.scale_fac      
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_bz*self.em_scale_fac      
           
         # Setup secondary emission stuff       
         pp = warp.ParticleScraper(sim.conductors, lsavecondid = 1, 
