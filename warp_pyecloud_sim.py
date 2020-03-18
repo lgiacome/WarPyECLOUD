@@ -14,6 +14,7 @@ import os
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 from saver import Saver
 from h5py_manager import dict_of_arrays_and_scalar_from_h5
+import scipy.io as sio
 
 class warp_pyecloud_sim:
     def __init__(self, nx = None, ny = None, nz =None, 
