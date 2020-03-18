@@ -38,7 +38,7 @@ class warp_pyecloud_sim:
                  laser_polangle = None, laser_emax = None, laser_xmin = None,
                  laser_xmax = None, laser_ymin = None, laser_ymax = None, 
                  init_em_fields = False, file_em_fields = None, em_scale_fac = 1,
-                 EM_method = 'Yee', CFL = 1):
+                 EM_method = 'Yee', cfl = 1):
         
 
         # Construct PyECLOUD secondary emission object
@@ -75,37 +75,32 @@ class warp_pyecloud_sim:
             os.makedirs(images_dir)
         self.lattice_elem = lattice_elem
         self.laser_func = laser_func
-		self.laser_source_z = source_z
-		self.laser_polangle = polangle
-		self.laser_emax = Emax
-		self.laser_xmin = laser_xmin
-		self.laser_xmax = laser_xmax
-		self.laser_ymin = laser_ymin
-		self.laser_ymax = laser_ymax
+        self.laser_source_z = laser_source_z
+        self.laser_polangle = laser_polangle
+        self.laser_emax = laser_emax
+        self.laser_xmin = laser_xmin
+        self.laser_xmax = laser_xmax
+        self.laser_ymin = laser_ymin
+        self.laser_ymax = laser_ymax
         # Just some shortcuts
         pw = picmi.warp
         step = pw.step
-
+        self.init_em_fields = init_em_fields
+        self.file_em_fields = file_em_fields
+        self.em_scale_fac = em_scale_fac
         if solver_type == 'ES':
             pw.top.dt = dt
 
         elif solver_type == 'EM':
-            if pw.top.dt is not None:
+            if dt is not None:
                 print('WARNING: dt is going to ignored for the EM solver')
-		    self.cfl = cfl
+            self.cfl = cfl
             self.EM_method = EM_method
-
+            
         if flag_relativ_tracking:
             pw.top.lrelativ = pw.true
         else:
             pw.top.lrelativ = pw.false
-
-        self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
-        self.saver = Saver(flag_output, flag_checkpointing, 
-                      self.tot_nsteps, n_bunches, nbins, 
-                      temps_filename = temps_filename,
-                      output_filename = output_filename)
- 
 
         # Beam parameters
         sigmaz = sigmat*picmi.clight
@@ -147,8 +142,8 @@ class warp_pyecloud_sim:
             lower_bc = ['dirichlet', 'dirichlet', 'dirichlet']
             upper_bc = ['dirichlet', 'dirichlet', 'dirichlet']
         if solver_type == 'EM':
-            lower_boundary_conditions = ['open', 'open', 'open']
-            upper_boundary_conditions = ['open', 'open', 'open']
+            lower_bc = ['open', 'open', 'open']
+            upper_bc = ['open', 'open', 'open']
 
         grid = picmi.Cartesian3DGrid(number_of_cells = [self.nx,
                                                         self.ny, 
@@ -176,19 +171,21 @@ class warp_pyecloud_sim:
                                           warp_l_correct_num_Cherenkov = False,
                                           warp_type_rz_depose = 0,
                                           warp_l_setcowancoefs = True,
-                                          warp_l_getrho = False, 
+                                          warp_l_getrho = False) 
                                           warp_laser_func = self.laser_func,
-										  warp_laser_source_z = self.laser_source_z,
-										  warp_laser_polangle = self.laser_polangle,
-									      warp_laser_emax = self.laser_emax,
-										  warp_laser_xmin = self.laser_xmin,
-										  warp_laser_xmax = self.laser_xmax,
-										  warp_laser_ymin = self.laser_ymin,
-										  warp_laser_ymax = self.laser_ymax)
-                      
+                                          warp_laser_source_z = self.laser_source_z,
+                                          warp_laser_polangle = self.laser_polangle,
+                                          warp_laser_emax = self.laser_emax,
+                                          warp_laser_xmin = self.laser_xmin,
+                                          warp_laser_xmax = self.laser_xmax,
+                                          warp_laser_ymin = self.laser_ymin,
+                                          warp_laser_ymax = self.laser_ymax)
+ 
+                     
         # Setup simulation
-        sim = picmi.Simulation(solver = solver, verbose = 1, cfl = 1.0,
+        sim = picmi.Simulation(solver = solver, verbose = 1, cfl = self.cfl,
                                warp_initialize_solver_after_generate = 1)
+
 
         sim.conductors = chamber.conductors
 
@@ -205,43 +202,49 @@ class warp_pyecloud_sim:
         picmi.warp.installuserinjection(self.bunched_beam)
 
         sim.step(1)
+        self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
+        self.saver = Saver(flag_output, flag_checkpointing, 
+                      self.tot_nsteps, n_bunches, nbins, 
+                      temps_filename = temps_filename,
+                      output_filename = output_filename)
+ 
         solver.solver.installconductor(sim.conductors, 
                                        dfill = picmi.warp.largepos)
         sim.step(1)
 
-		# Initialize the EM fields
-		if init_em_fields:
-			em = solver.solver
-			me = pw.me
-			
-			fields = sio.loadmat(file_em_fields)
-			
-			my_ex = fields['ex'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-			my_ey = fields['ey'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-			my_ez = fields['ez'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-			my_bx = fields['bx'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-			my_by = fields['by'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-			my_bz = fields['bz'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+        # Initialize the EM fields
+        if self.init_em_fields:
+            em = solver.solver
+            me = pw.me
+          
+            fields = sio.loadmat(self.file_em_fields)
+          
+            my_ex = fields['ex'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+            my_ey = fields['ey'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+            my_ez = fields['ez'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+            my_bx = fields['bx'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+            my_by = fields['by'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+            my_bz = fields['bz'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
 
-			em.fields.Ex[em.nxguard : em.nxp + em.nxguard + 1,
-             			 em.nyguard : em.nyp + em.nyguard + 1,
-             			 em.nzguard : em.nzp + em.nzguard + 1] = my_ex*scale_fac
-			em.fields.Ey[em.nxguard : em.nxp + em.nxguard + 1,
-             			 em.nyguard : em.nyp + em.nyguard + 1,
-             			 em.nzguard : em.nzp + em.nzguard + 1] = my_ey*scale_fac
-			em.fields.Ez[em.nxguard : em.nxp + em.nxguard + 1,
-            			 em.nyguard : em.nyp + em.nyguard + 1,
-             			 em.nzguard : em.nzp + em.nzguard + 1] = my_ez*scale_fac
-			em.fields.Bx[em.nxguard : em.nxp + em.nxguard + 1,
-             			 em.nyguard : em.nyp + em.nyguard + 1,
-             			 em.nzguard : em.nzp + em.nzguard + 1] = my_bx*scale_fac
-			em.fields.By[em.nxguard : em.nxp + em.nxguard + 1,
-             			 em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_by*scale_fac
-			em.fields.Bz[em.nxguard : em.nxp + em.nxguard + 1,
-             			 em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_bz*scale_fac			
-			
+            em.fields.Ex[em.nxguard : em.nxp + em.nxguard + 1,
+                         em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_ex*self.scale_fac
+            em.fields.Ey[em.nxguard : em.nxp + em.nxguard + 1,
+                         em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_ey*self.scale_fac
+            em.fields.Ez[em.nxguard : em.nxp + em.nxguard + 1,
+                         em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_ez*self.scale_fac
+            em.fields.Bx[em.nxguard : em.nxp + em.nxguard + 1,
+                         em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_bx*self.scale_fac
+            em.fields.By[em.nxguard : em.nxp + em.nxguard + 1,
+                         em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_by*self.scale_fac
+            em.fields.Bz[em.nxguard : em.nxp + em.nxguard + 1,
+                         em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_bz*self.scale_fac      
+          
         # Setup secondary emission stuff       
         pp = warp.ParticleScraper(sim.conductors, lsavecondid = 1, 
                                   lsaveintercept = 1,lcollectlpdata = 1)

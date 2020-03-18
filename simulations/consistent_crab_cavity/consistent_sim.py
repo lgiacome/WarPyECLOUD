@@ -10,7 +10,7 @@ if BIN not in sys.path:
 
 import numpy as np
 from warp_pyecloud_sim import warp_pyecloud_sim
-from chamber import CrabCavity
+from chamber import CrabCavityWaveguide
 from lattice_elements import CrabFields
 import matplotlib.pyplot as plt
 
@@ -20,9 +20,9 @@ N_mp_max = 6000000
 init_num_elecs = 2*10**7
 dh = 3.e-4
 
-nx = 200 
-ny = 200
-nz = 100
+nx = 20/2 
+ny = 15/2
+nz = 20/2
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -38,17 +38,17 @@ print(sigmax)
 sigmat= 1.000000e-09/4.
 max_z = 0.3
 
-# Paths for the fields
-fields_folder = str(Path(os.getcwd()).parent.parent)
-efield_path = fields_folder + '/efield.txt'
-hfield_path = fields_folder + '/hfield.txt'
-
-chamber = CrabCavity(-max_z, max_z)
-E_field_max = 5e6 #57
-lattice_elem = CrabFields(-max_z, max_rescale = E_field_max, efield_path = efield_path, 
-                          hfield_path = hfield_path)
-
+bunch_intensity = 0
+b_spac = 25e-9
 n_bunches = 1 
+
+chamber = CrabCavityWaveguide(-max_z, max_z, disp = 5e-3)
+#E_field_max = 5e6 #57
+
+init_em_fields = True
+fields_folder = str(Path(os.getcwd()).parent.parent)
+file_em_fields = fields_folder + '/ey_cavity.mat'
+em_scale_fac = 1e6
 
 def plots_crab(self, l_force = 0):
     fontsz = 16
@@ -60,141 +60,140 @@ def plots_crab(self, l_force = 0):
     plt.rcParams['legend.title_fontsize'] = fontsz
 
     chamber = self.chamber
-    if l_force or self.n_step%self.stride_imgs == 0:
-        plt.close()
-        (Nx, Ny, Nz) = np.shape(self.secelec.wspecies.get_density())
-        fig, axs = plt.subplots(1, 2, figsize = (12, 5))
-        fig.subplots_adjust(left = 0.1, bottom = 0.07, right = 0.99, 
-                            top = 0.87)
-        d = (self.secelec.wspecies.get_density()
-           + self.elecb.wspecies.get_density()
-           + self.beam.wspecies.get_density())
-        d2  = (self.secelec.wspecies.get_density() 
-            + self.elecb.wspecies.get_density())
-        im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet', 
-              origin = 'lower', vmin = 0, 
-              vmax = 5e9, 
-              extent = [chamber.xmin, chamber.xmax , 
-                        chamber.ymin, chamber.ymax])
-
-        lw = 2
-        axc = axs[0]
-        axc.vlines(x = -chamber.l_main_x/2, ymin = -chamber.l_main_y/2,
-                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.vlines(x = chamber.l_main_x/2, ymin = -chamber.l_main_y/2,
-                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.vlines(x = chamber.l_main_int_x, ymax = chamber.l_main_y/2,
-                                   ymin = chamber.ycen_up-chamber.l_main_int_y, 
-                                                        color = 'red', lw = lw)
-        axc.vlines(x = chamber.l_main_int_x, ymin = -chamber.l_main_y/2,
-                                 ymax = chamber.ycen_down+chamber.l_main_int_y, 
-                                                        color = 'red', lw = lw)
-        axc.vlines(x = -chamber.l_main_int_x, ymax = chamber.l_main_y/2,
-                                   ymin = chamber.ycen_up-chamber.l_main_int_y, 
-                                                        color = 'red', lw = lw)
-        axc.vlines(x = -chamber.l_main_int_x, ymin = -chamber.l_main_y/2,
-                                 ymax = chamber.ycen_down+chamber.l_main_int_y, 
-                                                        color = 'red', lw = lw)
-        axc.hlines(y = chamber.l_main_y/2, xmin = -chamber.l_main_x/2,
-                          xmax = -chamber.l_main_int_x, color = 'red', lw = lw)
-        axc.hlines(y = chamber.l_main_y/2, xmax = chamber.l_main_x/2,
-                           xmin = chamber.l_main_int_x, color = 'red', lw = lw)
-        axc.hlines(y = -chamber.l_main_y/2, xmin = -chamber.l_main_x/2,
-                          xmax = -chamber.l_main_int_x, color = 'red', lw = lw)
-        axc.hlines(y = -chamber.l_main_y/2, xmax = chamber.l_main_x/2,
-                           xmin = chamber.l_main_int_x, color = 'red', lw = lw)
-        axc.hlines(y = chamber.ycen_up - chamber.l_main_int_y, 
-                   xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, 
-                                                        color = 'red', lw = lw)
-        axc.hlines(y = chamber.ycen_down + chamber.l_main_int_y, 
-                   xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, 
-                                                        color = 'red', lw = lw)
- 
-
-        axs[0].set_xlabel('x [m]')
-        axs[0].set_ylabel('y [m]')
-        axs[0].set_title('rho')
-        fig.colorbar(im1, ax = axs[0])
-        im2 = axs[1].imshow(d[int(Nx/2), :, :], cmap = 'jet', 
-                            origin = 'lower', 
-                            vmin = 0, 
-                            vmax = 5e9,
-                            extent=[chamber.zmin, chamber.zmax, 
-                                    chamber.ymin, chamber.ymax], 
-                            aspect = 'equal')
-        lw = 2
-        axc = axs[1]
-        axc.hlines(y = chamber.l_beam_pipe/2, xmin = chamber.zmin, 
-                            xmax = -chamber.l_main_z/2, color = 'red', lw = lw)
-        axc.hlines(y = -chamber.l_beam_pipe/2, xmin = chamber.zmin, 
-                            xmax = -chamber.l_main_z/2, color = 'red', lw = lw)
-        axc.hlines(y = chamber.l_beam_pipe/2, xmax = chamber.zmax, 
-                             xmin = chamber.l_main_z/2, color = 'red', lw = lw)
-        axc.hlines(y = -chamber.l_beam_pipe/2, xmax = chamber.zmax, 
-                             xmin = chamber.l_main_z/2, color = 'red', lw = lw)
-        axc.hlines(y = chamber.ycen_up-chamber.l_main_int_y, 
-                   xmin = -chamber.l_main_int_z, xmax = chamber.l_main_int_z,
-                   color = 'red', lw = lw)
-        axc.hlines(y = chamber.ycen_down+chamber.l_main_int_y, 
-                   xmin = -chamber.l_main_int_z, xmax = chamber.l_main_int_z, 
-                   color = 'red', lw = lw)
-        axc.hlines(y = chamber.l_main_y/2, xmin = -chamber.l_main_z/2, 
-                          xmax = -chamber.l_main_int_z, color = 'red', lw = lw)
-        axc.hlines(y = -chamber.l_main_y/2, xmin = -chamber.l_main_z/2, 
-                          xmax = -chamber.l_main_int_z, color = 'red', lw = lw)
-        axc.hlines(y = chamber.l_main_y/2, xmax = chamber.l_main_z/2, 
-                           xmin = chamber.l_main_int_z, color = 'red', lw = lw)
-        axc.hlines(y = -chamber.l_main_y/2, xmax = chamber.l_main_int_z, 
-                           xmin = chamber.l_main_z/2, color = 'red', lw = lw)
-      
-        axc.vlines(x = -chamber.l_main_z/2, ymin = chamber.l_beam_pipe/2,
-                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.vlines(x = -chamber.l_main_z/2, ymax = -chamber.l_beam_pipe/2,
-                            ymin = -chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.vlines(x = -chamber.l_main_int_z, ymin = chamber.l_beam_pipe/2,
-                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.vlines(x = -chamber.l_main_int_z, ymax = -chamber.l_beam_pipe/2,
-                            ymin = -chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.vlines(x = chamber.l_main_int_z, ymax = chamber.l_main_y/2,
-                   ymin = chamber.ycen_up - chamber.l_main_int_y, 
-                                                        color = 'red', lw = lw)
-        axc.vlines(x = chamber.l_main_int_z, ymin = -chamber.l_main_y/2,
-                   ymax = chamber.ycen_down + chamber.l_main_int_y, 
-                                                        color = 'red', lw = lw)
-        axc.vlines(x = chamber.l_main_z/2, ymin = chamber.l_beam_pipe/2,
-                             ymax = chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.vlines(x = chamber.l_main_z/2, ymax = -chamber.l_beam_pipe/2,
-                            ymin = -chamber.l_main_y/2, color = 'red', lw = lw)
-        axc.set_aspect((chamber.zmax-chamber.zmin)/(chamber.xmax-chamber.xmin))
-
-        axs[1].set_xlabel('z [m]')
-        axs[1].set_ylabel('y [m]')
-        axs[1].set_title('rho')
-        fig.colorbar(im2, ax = axs[1])
-        fig.suptitle('t = %1.6e' %picmi.warp.top.time, fontsize=fontsz)
-        figname = self.images_dir + '/' + repr(int(self.n_step)).zfill(4) + '.png'
-        plt.savefig(figname)
+    k_antenna = int((self.source_z - zmin)/em.dz)
+    j_mid_waveguide = int((chamber.ycen6 - ymin)/em.dy)
+    flist = ['Ex','Ey','Ez','Bx','By','Bz']
+    flist = ['Ey']
+    if pw.top.it%10==0 or l_force:
+        for ffstr in flist:
+            if ffstr == 'Ex': ff = em.gatherex()
+            if ffstr == 'Ey': ff = em.gatherey()
+            if ffstr == 'Ez': ff = em.gatherez()
+            if ffstr == 'Bx': ff = em.gatherbx()
+            if ffstr == 'By': ff = em.gatherby()
+            if ffstr == 'Bz': ff = em.gatherbz()
+            if me==0:
+                maxe =35 #np.max(ey[:,:,:])
+                mine = -35 #np.min(ey[:,:,:])
+                cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+                cmap = mpl.cm.jet
+                Nx = nx + 1
+                Ny = ny + 1
+                ey00 = ff[:,:,chamber.k_antenna]
+                ey01 = ff[:,chamber.j_mid_waveguide,:]
+                ey10 = ff[:,int(Ny/2),:]
+                ey11 = ff[int(Nx/2),:,:]
+                ax = plt.subplot2grid((2,2), (0,0))
+                ax.imshow(np.flipud(ey00.T),cmap = cmap, vmin=mine,vmax = maxe, extent=[xmin, xmax, ymin, ymax], aspect = 'auto')
+                lw = 1
+                plt.vlines(x = chamber.l_beam_pipe/2, ymin = -chamber.l_beam_pipe/2, ymax = chamber.l_beam_pipe/2, color='black',lw=lw)
+                plt.vlines(x = -chamber.l_beam_pipe/2, ymin = -chamber.l_beam_pipe/2, ymax = chamber.l_beam_pipe/2, color='black',lw=lw)
+                plt.hlines(y = chamber.l_beam_pipe/2, xmin = -chamber.l_beam_pipe/2, xmax = chamber.l_beam_pipe/2, color='black',lw=lw)
+                plt.hlines(y = -chamber.l_beam_pipe/2, xmin = -chamber.l_beam_pipe/2, xmax = chamber.l_beam_pipe/2, color='black',lw=lw)
+                plt.vlines(x = chamber.x_min_wg, ymin = chamber.y_min_wg, ymax = chamber.y_max_wg, color='black',lw=lw)
+                plt.vlines(x = chamber.x_max_wg, ymin = chamber.y_min_wg, ymax = chamber.y_max_wg, color='black',lw=lw)
+                plt.hlines(y = chamber.y_min_wg, xmin = chamber.x_min_wg, xmax = chamber.x_max_wg, color='black',lw=lw)
+                plt.hlines(y = chamber.y_max_wg, xmin = chamber.x_min_wg, xmax = chamber.x_max_wg, color='black',lw=lw)
+                ax.set_xlabel('x')
+                ax.set_ylabel('y')
+                ax = plt.subplot2grid((2,2), (0,1))
+                ax.imshow(np.flipud(ey01.T), cmap = cmap, vmin=mine,vmax = maxe, extent=[xmin, xmax, zmin, zmax], aspect = 'auto')
+                plt.vlines(x = chamber.x_min_wg, ymin = z_min_wg, ymax = chamber.z_rest, color='black',lw=lw)
+                plt.vlines(x = chamber.x_max_wg, ymin = z_min_wg, ymax = chamber.z_rest, color='black',lw=lw)
+                plt.vlines(x = chamber.x_min_wg_rest, ymin = chamber.z_rest, ymax = -chamber.l_main_z/2, color='black',lw=lw)
+                plt.vlines(x = chamber.x_max_wg_rest, ymin = chamber.z_rest, ymax = -chamber.l_main_z/2, color='black',lw=lw)
+                plt.hlines(y = chamber.z_rest, xmin = chamber.x_min_wg, xmax = chamber.x_min_wg_rest, color='black',lw=lw)
+                plt.hlines(y = chamber.z_rest, xmin = chamber.x_max_wg_rest, xmax = chamber.x_max_wg, color='black',lw=lw)
+                plt.vlines(x = -chamber.l_main_x/2, ymin = -chamber.l_main_z/2, ymax = chamber.l_main_z/2, color='black',lw=lw)
+                plt.vlines(x = chamber.l_main_x/2, ymin = -chamber.l_main_z/2, ymax = chamber.l_main_z/2, color='black',lw=lw)
+                plt.hlines(y = -chamber.l_main_z/2, xmin = -chamber.l_main_x/2, xmax = chamber.x_min_wg_rest, color='black',lw=lw)
+                plt.hlines(y = -chamber.l_main_z/2, xmin = chamber.x_max_wg_rest, xmax = chamber.l_main_x/2, color='black',lw=lw)
+                plt.hlines(y = chamber.l_main_z/2, xmin = -chamber.l_main_x/2, xmax = chamber.l_main_x/2, color='black',lw=lw)
+                plt.hlines(y = chamber.l_main_int_z, xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, color='black',lw=lw)
+                plt.hlines(y = -chamber.l_main_int_z, xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, color='black',lw=lw)
+                plt.vlines(x = -chamber.l_main_int_x, ymin = -chamber.l_main_int_z, ymax = chamber.l_main_int_z, color='black',lw=lw)
+                plt.vlines(x = chamber.l_main_int_x, ymin = -chamber.l_main_int_z, ymax = chamber.l_main_int_z, color='black',lw=lw)           
+                ax.set_xlabel('x')
+                ax.set_ylabel('z')
+                ax = plt.subplot2grid((2,2), (1,0))
+                im = ax.imshow(np.flipud(ey10.T), cmap = cmap, vmin=mine,vmax = maxe, extent=[xmin, xmax, zmin, zmax], aspect = 'auto')
+                plt.vlines(x = chamber.l_beam_pipe/2, ymin = chamber.l_main_z/2, ymax = zmax)
+                plt.vlines(x = -chamber.l_beam_pipe/2, ymin = chamber.l_main_z/2, ymax = zmax)
+                plt.vlines(x = chamber.l_beam_pipe/2, ymin = zmin, ymax = -chamber.l_main_z/2)
+                plt.vlines(x = -chamber.l_beam_pipe/2, ymin = zmin, ymax = -chamber.l_main_z/2)
+                plt.vlines(x = chamber.l_main_x/2, ymin = -chamber.l_main_z/2, ymax = chamber.l_main_z/2)
+                plt.vlines(x = -chamber.l_main_x/2, ymin = -chamber.l_main_z/2, ymax = chamber.l_main_z/2)           
+                plt.hlines(y = chamber.l_main_z/2, xmin = chamber.l_beam_pipe/2, xmax = chamber.l_main_x/2)
+                plt.hlines(y = -chamber.l_main_z/2, xmin = chamber.l_beam_pipe/2, xmax = chamber.l_main_x/2)
+                plt.hlines(y = chamber.l_main_z/2, xmin = -chamber.l_main_x/2, xmax = -chamber.l_beam_pipe/2)
+                plt.hlines(y = -chamber.l_main_z/2, xmin = -chamber.l_main_x/2, xmax = -chamber.l_beam_pipe/2)
+                plt.hlines(y = chamber.l_main_int_z, xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, color='black',lw=lw, linestyle = 'dashed')
+                plt.hlines(y = -chamber.l_main_int_z, xmin = -chamber.l_main_int_x, xmax = chamber.l_main_int_x, color='black',lw=lw, linestyle = 'dashed')
+                plt.vlines(x = -chamber.l_main_int_x, ymin = -chamber.l_main_int_z, ymax = chamber.l_main_int_z, color='black',lw=lw, linestyle = 'dashed')
+                plt.vlines(x = chamber.l_main_int_x, ymin = -chamber.l_main_int_z, ymax = chamber.l_main_int_z, color='black',lw=lw, linestyle = 'dashed')
+                ax.set_xlabel('x')
+                ax.set_ylabel('z')
+                ax = plt.subplot2grid((2,2), (1,1))
+                im = ax.imshow(np.flipud(ey11), cmap = cmap, vmin=mine,vmax = maxe, extent=[zmin, zmax, ymin, ymax], aspect = 'auto')
+                plt.hlines(y = -chamber.l_beam_pipe/2, xmin = zmin, xmax = -chamber.l_main_z/2)
+                plt.hlines(y = chamber.l_beam_pipe/2, xmin = zmin, xmax = -chamber.l_main_z/2)
+                plt.hlines(y = -chamber.l_beam_pipe/2, xmin = chamber.l_main_z/2, xmax = zmax)
+                plt.hlines(y = chamber.l_beam_pipe/2, xmin = chamber.l_main_z/2, xmax = zmax)
+                plt.hlines(y = chamber.y_min_wg, xmin = zmin, xmax = -chamber.l_main_z/2)
+                plt.hlines(y = chamber.y_max_wg, xmin = zmin, xmax = -chamber.l_main_z/2)
+                plt.hlines(y = -chamber.l_main_y/2, xmin = -chamber.l_main_z/2, xmax = -chamber.l_main_int_z)
+                plt.hlines(y = chamber.l_main_y/2, xmin = -chamber.l_main_z/2, xmax = -chamber.l_main_int_z)
+                plt.hlines(y = -chamber.l_main_y/2, xmin = chamber.l_main_int_z, xmax = chamber.l_main_z/2)
+                plt.hlines(y = chamber.l_main_y/2, xmin = chamber.l_main_int_z, xmax = chamber.l_main_z/2)
+                plt.hlines(y = chamber.l_beam_pipe/2, xmin = -chamber.l_main_int_z, xmax = chamber.l_main_int_z)
+                plt.hlines(y = -chamber.l_beam_pipe/2, xmin = -chamber.l_main_int_z, xmax = chamber.l_main_int_z)
+                plt.vlines(x = -chamber.l_main_z/2, ymin = chamber.l_beam_pipe/2, ymax = chamber.y_min_wg)
+                plt.vlines(x = -chamber.l_main_z/2, ymin = chamber.y_max_wg, ymax = chamber.l_main_y/2)
+                plt.vlines(x = -chamber.l_main_z/2, ymin = -chamber.l_main_y/2, ymax = -chamber.l_beam_pipe/2)
+                plt.vlines(x = chamber.l_main_z/2, ymin = -chamber.l_main_y/2, ymax = -chamber.l_beam_pipe/2)
+                plt.vlines(x = chamber.l_main_z/2, ymin = chamber.l_beam_pipe/2, ymax = chamber.l_main_y/2)
+                plt.vlines(x = chamber.l_main_int_z, ymin = -chamber.l_main_y/2, ymax = -chamber.l_beam_pipe/2)
+                plt.vlines(x = chamber.l_main_int_z, ymin = chamber.l_beam_pipe/2, ymax = chamber.l_main_y/2)
+                plt.vlines(x = -chamber.l_main_int_z, ymin = -chamber.l_main_y/2, ymax = -chamber.l_beam_pipe/2)
+                plt.vlines(x = -chamber.l_main_int_z, ymin = chamber.l_beam_pipe/2, ymax = chamber.l_main_y/2)
+                ax.set_xlabel('z')
+                ax.set_xlabel('z')
+                ax.set_ylabel('y')
+                #plt.subplot(2,2,4)
+                #laser_func_mat = laser_func_plot(xx,yy,pw.top.time)
+                #ax = plt.gca()
+                #im = ax.imshow(laser_func_mat, cmap = cmap, vmin=mine,vmax = maxe, extent=[ -width/2, width/2,-height/2, height/2])
+                #ax.set_xlabel('x')
+                #ax.set_ylabel('y')
+                fig.subplots_adjust(left = 0.15, right=0.8, hspace = 0.4, wspace = 0.4)
+                fig.colorbar(im, cax=cbar_ax)
+                fig.suptitle('Ey, t = %1.6e' %pw.top.time )
+                #fig.tight_layout()
+                if not os.path.exists('images_cavity'):
+                    os.mkdir('images_cavity')
+                filename = 'images_cavity/it_' + str(pw.top.it).zfill(5) + '.png'
+                plt.savefig(filename, dpi=150)
+                fig.clf()
 
 
 
 kwargs = {'enable_trap': enable_trap,
-	'z_length': 1.,
-	'nx': nx,
-	'ny': ny, 
-	'nz': nz,
-	'n_bunches': n_bunches,
-    'b_spac' : 25e-9,
+    'solver_type': 'EM',
+    'nx': nx,
+    'ny': ny, 
+    'nz': nz,
+    'n_bunches': n_bunches,
+    'b_spac' : b_spac,
     'beam_gamma': beam_gamma, 
-	'sigmax': sigmax,
+    'sigmax': sigmax,
     'sigmay': sigmay, 
     'sigmat': sigmat,
-    'bunch_intensity': 1.1e11, 
+    'bunch_intensity': bunch_intensity, 
     'init_num_elecs': init_num_elecs,
     'init_num_elecs_mp': int(0.7*N_mp_max), 
     'pyecloud_nel_mp_ref': init_num_elecs/(0.7*N_mp_max),
-	'dt': 25e-12,
     'pyecloud_fact_clean': 1e-6,
-	'pyecloud_fact_split': 1.5,
+    'pyecloud_fact_split': 1.5,
     'Emax': 332., 
     'del_max': 1.7,
     'R0': 0.7, 
@@ -204,8 +203,8 @@ kwargs = {'enable_trap': enable_trap,
     'secondary_angle_distribution': 'cosine_3D', 
     'N_mp_max': N_mp_max,
     'N_mp_target': N_mp_max/3,
-	'flag_checkpointing': True,
-	'checkpoints': np.linspace(1, n_bunches, n_bunches),
+    'flag_checkpointing': True,
+    'checkpoints': np.linspace(1, n_bunches, n_bunches),
     'temps_filename': 'complete_temp.h5',
     'flag_output': True,
     'bunch_macro_particles': 1e5,
@@ -213,10 +212,12 @@ kwargs = {'enable_trap': enable_trap,
     'output_filename': 'complete_out.h5',
     'images_dir': 'images',
     'flag_relativ_tracking': True,
-    'lattice_elem': lattice_elem,
     'chamber': chamber,
     'custom_plot': plots_crab,
-    'stride_imgs': 1
+    'stride_imgs': 1,
+    'init_em_fields': init_em_fields,
+    'file_em_fields': file_em_fields,
+    'em_scale_fac': em_scale_fac
 }
 
 sim = warp_pyecloud_sim(**kwargs)

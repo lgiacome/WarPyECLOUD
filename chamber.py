@@ -133,6 +133,7 @@ class CrabCavity:
 
         self.z_start = z_start
         self.z_end = z_end
+        self.disp = disp
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
@@ -210,4 +211,111 @@ class CrabCavity:
         return np.logical_or.reduce([flag_out_box, flag_out_poles, 
                                      flag_out_left, flag_out_right])
     
+class CrabCavityWaveguide:
 
+    def __init__(self, z_start, z_end,  disp = 0, ghost_x = 1e-3, ghost_y = 1e-3,
+                 ghost_z = 1e-3, condid = 1):
+
+        print('Simulating ECLOUD in a consistent crab cavity')
+
+        self.z_start = z_start
+        self.z_end = z_end
+        self.ghost_x = ghost_x
+        self.ghost_y = ghost_y
+        self.ghost_z = ghost_z
+        self.l_main_y = 242e-3
+        self.l_main_x = 300e-3
+        self.l_main_z = 350e-3
+        self.l_beam_pipe = 84e-3
+        self.l_int = 62e-3
+        self.l_main_int_y = self.l_main_y - self.l_beam_pipe/2
+        self.l_main_int_z = self.l_main_z/2 - self.l_int
+        self.l_main_int_x = self.l_main_x/2 - self.l_int
+        self.disp = disp
+        assert z_start < - self.l_main_z/2, 'z_start must be lower than -175mm'
+        assert z_end > self.l_main_z/2, 'z_end must be higher than 175mm'
+
+        self.xmin = -self.l_main_x/2 - self.ghost_x
+        self.xmax = -self.xmin
+        self.ymin = -self.l_main_y/2 - ghost_y
+        self.ymax = -self.ymin
+        self.zmin = z_start - ghost_z
+        self.zmax = z_end + ghost_z
+
+        box1 = picmi.warp.Box(zsize = self.zmax - self.zmin,
+                              xsize = self.xmax - self.xmin,
+                              ysize = self.ymax - self.ymin, condid = condid)
+        box2 = picmi.warp.Box(zsize = self.zmax - self.zmin,
+                              xsize = self.l_beam_pipe, 
+                              ysize = self.l_beam_pipe, condid = condid)
+        box3 = picmi.warp.Box(zsize = self.l_main_z,
+                              xsize = self.l_main_x,
+                              ysize= self.l_main_y, condid = condid)
+
+        self.ycen_up = self.l_beam_pipe/2 + self.l_main_int_y
+        self.ycen_down = - self.ycen_up
+        box4 = picmi.warp.Box(zsize = 2*self.l_main_int_z, 
+                              xsize = 2*self.l_main_int_x, 
+                              ysize = 2*self.l_main_int_y, ycent=self.ycen_up, 
+                              condid = condid)
+        box5 = picmi.warp.Box(zsize = 2*self.l_main_int_z, 
+                              xsize = 2*self.l_main_int_x, 
+                              ysize = 2*self.l_main_int_y, ycent=self.ycen_down, 
+                              condid = condid)
+
+        self.y_min_wg = 48.4e-3 + self.disp
+        self.y_max_wg = 96.8e-3 + self.disp
+        self.x_min_wg_rest = -120e-3
+        self.x_max_wg_rest = 120e-3
+        self.x_min_wg = -200e-3
+        self.x_max_wg = 200e-3
+        self.z_rest = -205e-3
+        self.z_max_wg = -self.l_main_z/2
+        self.z_min_wg = self.zmin
+        self.ycen6 = 0.5*(self.y_min_wg + self.y_max_wg)
+        self.zcen6 = 0.5*(self.z_rest + self.z_max_wg)
+        box6 = picmi.warp.Box(zsize = self.z_max_wg - self.z_rest, 
+                              xsize = self.x_max_wg_rest - self.x_min_wg_rest,
+                              ysize = self.y_max_wg - self.y_min_wg, 
+                              ycent = self.ycen6, zcent = self.zcen6)                              
+        self.ycen7 = 0.5*(self.y_min_wg + self.y_max_wg)
+        self.zcen7 = 0.5*(self.z_min_wg + self.z_max_wg)
+        box7 = picmi.warp.Box(zsize = self.z_max_wg - self.z_min_wg,
+                              xsize = self.x_max_wg - self.x_min_wg, 
+                              ysize = self.y_max_wg - self.y_min_wg, 
+                              ycent = self.ycen7, zcent = self.zcen7)
+
+
+        self.conductors = box1 - box2 - box3 + box4 + box5
+
+        self.upper_bound = [self.l_main_x/2, self.l_main_y/2, self.l_main_z/2]
+        self.lower_bound = [-self.l_main_x/2, -self.l_main_y/2, -self.l_main_z/2]
+
+    def is_outside(self, xx,yy,zz):
+        flag_out_box = np.logical_and.reduce([abs(xx) > self.l_main_x/2, 
+                                              abs(yy) > self.l_main_y/2,
+                                              abs(zz) > self.l_main_z/2])
+
+        flag_out_poles = np.logical_and.reduce([abs(xx) < self.l_main_int_x,
+                                                abs(zz) < self.l_main_int_z,
+                                                abs(yy) > self.l_beam_pipe/2])
+        zs_pipe_left = self.z_start
+        ze_pipe_left = -self.l_main_z/2
+        zs_pipe_right = self.l_main_z/2
+        ze_pipe_right = self.z_end
+        flag_out_pipe_l = np.logical_and.reduce([ abs(xx) > self.l_beam_pipe,
+                                                  abs(yy) > self.l_beam_pipe,
+                                                  zz < zs_pipe_left,
+                                                  zz > ze_pipe_left])
+        flag_out_pipe_r = np.logical_and.reduce([ abs(xx) > self.l_beam_pipe,
+                                                  abs(yy) > self.l_beam_pipe,
+                                                  zz < zs_pipe_right,
+                                                  zz > ze_pipe_right])
+
+
+        flag_out_left = np.logical_and(flag_out_box,flag_out_pipe_l)
+        flag_out_right = np.logical_and(flag_out_box, flag_out_pipe_r)
+        
+        return np.logical_or.reduce([flag_out_box, flag_out_poles, 
+                                     flag_out_left, flag_out_right])
+    
