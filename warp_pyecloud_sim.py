@@ -171,7 +171,7 @@ class warp_pyecloud_sim:
                                           warp_l_correct_num_Cherenkov = False,
                                           warp_type_rz_depose = 0,
                                           warp_l_setcowancoefs = True,
-                                          warp_l_getrho = False) 
+                                          warp_l_getrho = False, 
                                           warp_laser_func = self.laser_func,
                                           warp_laser_source_z = self.laser_source_z,
                                           warp_laser_polangle = self.laser_polangle,
