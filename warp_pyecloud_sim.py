@@ -34,7 +34,10 @@ class warp_pyecloud_sim:
                  ghost = None,ghost_z = None, stride_imgs = 10, 
                  stride_output = 1000,chamber = False, lattice_elem = None, 
                  temps_filename = 'temp_mps_info.h5', custom_plot = None,
-                 images_dir = None):
+                 images_dir = None, laser_func = None, laser_source_z = None, 
+                 laser_polangle = None, laser_emax = None, laser_xmin = None,
+                 laser_xmax = None, laser_ymin = None, laser_ymax = None, 
+                 init_em_fields = False, file_em_fields = None, em_scale_fac = 1):
         
 
         # Construct PyECLOUD secondary emission object
@@ -70,6 +73,14 @@ class warp_pyecloud_sim:
         if not os.path.exists(images_dir):
             os.makedirs(images_dir)
         self.lattice_elem = lattice_elem
+        self.laser_func = laser_func,
+		self.laser_source_z = source_z,
+		self.laser_polangle = polangle,
+		self.laser_emax = Emax,
+		self.laser_xmin = laser_xmin,
+		self.laser_xmax = laser_xmax,
+		self.laser_ymin = laser_ymin,
+		self.laser_ymax = laser_ymax
         # Just some shortcuts
         pw = picmi.warp
         step = pw.step
@@ -80,7 +91,7 @@ class warp_pyecloud_sim:
                 pw.top.lrelativ = pw.true
             else:
                 pw.top.lrelativ = pw.false
-
+		
 
         self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
         self.saver = Saver(flag_output, flag_checkpointing, 
@@ -152,13 +163,22 @@ class warp_pyecloud_sim:
                     stride = [[1], [1], [1]],
                     alpha = [[0.5], [0.5], [0.5]])
             solver = picmi.ElectromagneticSolver(grid = grid,
-                                          method = 'CKC',
+                                          method = 'YEE',
                                           cfl = 1.,
                                           source_smoother = smoother,
                                           warp_l_correct_num_Cherenkov = False,
                                           warp_type_rz_depose = 0,
                                           warp_l_setcowancoefs = True,
-                                          warp_l_getrho = False)
+                                          warp_l_getrho = False, 
+                                          warp_laser_func = self.laser_func,
+										  warp_laser_source_z = self.laser_source_z,
+										  warp_laser_polangle = self.laser_polangle,
+									      warp_laser_emax = self.laser_emax,
+										  warp_laser_xmin = self.laser_xmin,
+										  warp_laser_xmax = self.laser_xmax,
+										  warp_laser_ymin = self.laser_ymin,
+										  warp_laser_ymax = self.laser_ymax)
+                      
         # Setup simulation
         sim = picmi.Simulation(solver = solver, verbose = 1, cfl = 1.0,
                                warp_initialize_solver_after_generate = 1)
@@ -182,6 +202,39 @@ class warp_pyecloud_sim:
                                        dfill = picmi.warp.largepos)
         sim.step(1)
 
+		# Initialize the EM fields
+		if init_em_fields:
+			em = solver.solver
+			me = pw.me
+			
+			fields = sio.loadmat(file_em_fields)
+			
+			my_ex = fields['ex'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+			my_ey = fields['ey'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+			my_ez = fields['ez'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+			my_bx = fields['bx'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+			my_by = fields['by'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+			my_bz = fields['bz'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+
+			em.fields.Ex[em.nxguard : em.nxp + em.nxguard + 1,
+             			 em.nyguard : em.nyp + em.nyguard + 1,
+             			 em.nzguard : em.nzp + em.nzguard + 1] = my_ex*scale_fac
+			em.fields.Ey[em.nxguard : em.nxp + em.nxguard + 1,
+             			 em.nyguard : em.nyp + em.nyguard + 1,
+             			 em.nzguard : em.nzp + em.nzguard + 1] = my_ey*scale_fac
+			em.fields.Ez[em.nxguard : em.nxp + em.nxguard + 1,
+            			 em.nyguard : em.nyp + em.nyguard + 1,
+             			 em.nzguard : em.nzp + em.nzguard + 1] = my_ez*scale_fac
+			em.fields.Bx[em.nxguard : em.nxp + em.nxguard + 1,
+             			 em.nyguard : em.nyp + em.nyguard + 1,
+             			 em.nzguard : em.nzp + em.nzguard + 1] = my_bx*scale_fac
+			em.fields.By[em.nxguard : em.nxp + em.nxguard + 1,
+             			 em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_by*scale_fac
+			em.fields.Bz[em.nxguard : em.nxp + em.nxguard + 1,
+             			 em.nyguard : em.nyp + em.nyguard + 1,
+                         em.nzguard : em.nzp + em.nzguard + 1] = my_bz*scale_fac			
+			
         # Setup secondary emission stuff       
         pp = warp.ParticleScraper(sim.conductors, lsavecondid = 1, 
                                   lsaveintercept = 1,lcollectlpdata = 1)
