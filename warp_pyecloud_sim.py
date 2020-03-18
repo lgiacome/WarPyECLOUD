@@ -37,7 +37,8 @@ class warp_pyecloud_sim:
                  images_dir = None, laser_func = None, laser_source_z = None, 
                  laser_polangle = None, laser_emax = None, laser_xmin = None,
                  laser_xmax = None, laser_ymin = None, laser_ymax = None, 
-                 init_em_fields = False, file_em_fields = None, em_scale_fac = 1):
+                 init_em_fields = False, file_em_fields = None, em_scale_fac = 1,
+                 EM_method = 'Yee', CFL = 1):
         
 
         # Construct PyECLOUD secondary emission object
@@ -73,13 +74,13 @@ class warp_pyecloud_sim:
         if not os.path.exists(images_dir):
             os.makedirs(images_dir)
         self.lattice_elem = lattice_elem
-        self.laser_func = laser_func,
-		self.laser_source_z = source_z,
-		self.laser_polangle = polangle,
-		self.laser_emax = Emax,
-		self.laser_xmin = laser_xmin,
-		self.laser_xmax = laser_xmax,
-		self.laser_ymin = laser_ymin,
+        self.laser_func = laser_func
+		self.laser_source_z = source_z
+		self.laser_polangle = polangle
+		self.laser_emax = Emax
+		self.laser_xmin = laser_xmin
+		self.laser_xmax = laser_xmax
+		self.laser_ymin = laser_ymin
 		self.laser_ymax = laser_ymax
         # Just some shortcuts
         pw = picmi.warp
@@ -87,11 +88,17 @@ class warp_pyecloud_sim:
 
         if solver_type == 'ES':
             pw.top.dt = dt
-            if flag_relativ_tracking:
-                pw.top.lrelativ = pw.true
-            else:
-                pw.top.lrelativ = pw.false
-		
+
+        elif solver_type == 'EM':
+            if pw.top.dt is not None:
+                print('WARNING: dt is going to ignored for the EM solver')
+		    self.cfl = cfl
+            self.EM_method = EM_method
+
+        if flag_relativ_tracking:
+            pw.top.lrelativ = pw.true
+        else:
+            pw.top.lrelativ = pw.false
 
         self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
         self.saver = Saver(flag_output, flag_checkpointing, 
@@ -163,8 +170,8 @@ class warp_pyecloud_sim:
                     stride = [[1], [1], [1]],
                     alpha = [[0.5], [0.5], [0.5]])
             solver = picmi.ElectromagneticSolver(grid = grid,
-                                          method = 'YEE',
-                                          cfl = 1.,
+                                          method = self.EM_method,
+                                          cfl = self.cfl,
                                           source_smoother = smoother,
                                           warp_l_correct_num_Cherenkov = False,
                                           warp_type_rz_depose = 0,
