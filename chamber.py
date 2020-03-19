@@ -213,7 +213,7 @@ class CrabCavity:
     
 class CrabCavityWaveguide:
 
-    def __init__(self, z_start, z_end,  disp = 0, ghost_x = 1e-3, ghost_y = 1e-3,
+    def __init__(self, z_start, z_end,  disp = 0, ghost_x = 10e-3, ghost_y = 10e-3,
                  ghost_z = 1e-3, condid = 1):
 
         print('Simulating ECLOUD in a consistent crab cavity')
@@ -235,7 +235,7 @@ class CrabCavityWaveguide:
         assert z_start < - self.l_main_z/2, 'z_start must be lower than -175mm'
         assert z_end > self.l_main_z/2, 'z_end must be higher than 175mm'
 
-        self.xmin = -self.l_main_x/2 - self.ghost_x
+        self.xmin = -200e-3 - ghost_x
         self.xmax = -self.xmin
         self.ymin = -self.l_main_y/2 - ghost_y
         self.ymax = -self.ymin
@@ -286,7 +286,7 @@ class CrabCavityWaveguide:
                               ycent = self.ycen7, zcent = self.zcen7)
 
 
-        self.conductors = box1 - box2 - box3 + box4 + box5
+        self.conductors = box1 - box2 - box3 + box4 + box5 - box6 - box7
 
         self.upper_bound = [self.l_main_x/2, self.l_main_y/2, self.l_main_z/2]
         self.lower_bound = [-self.l_main_x/2, -self.l_main_y/2, -self.l_main_z/2]
