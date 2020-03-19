@@ -159,13 +159,13 @@ class warp_pyecloud_sim:
                                      upper_boundary_conditions = upper_bc)
 
         if solver_type == 'ES':
-            solver = picmi.ElectrostaticSolver(grid = grid)
+            self.solver = picmi.ElectrostaticSolver(grid = grid)
         elif solver_type == 'EM':
             smoother = picmi.BinomialSmoother(n_pass = [[1], [1], [1]],
                     compensation = [[False], [False], [False]],
                     stride = [[1], [1], [1]],
                     alpha = [[0.5], [0.5], [0.5]])
-            solver = picmi.ElectromagneticSolver(grid = grid,
+            self.solver = picmi.ElectromagneticSolver(grid = grid,
                                           method = self.EM_method,
                                           cfl = self.cfl,
                                           source_smoother = smoother,
@@ -184,21 +184,21 @@ class warp_pyecloud_sim:
  
                      
         # Setup simulation
-        sim = picmi.Simulation(solver = solver, verbose = 1, cfl = self.cfl,
+        sim = picmi.Simulation(solver = self.solver, verbose = 1, cfl = self.cfl,
                                warp_initialize_solver_after_generate = 1)
 
 
         sim.conductors = chamber.conductors
 
         sim.add_species(self.beam, layout = None,
-                        initialize_self_field = solver == 'EM')
+                        initialize_self_field = solver_type == 'EM')
 
         self.ecloud_layout = picmi.PseudoRandomLayout(
                                           n_macroparticles = init_num_elecs_mp,
                                           seed = 3)
 
         sim.add_species(self.ecloud, layout = self.ecloud_layout,
-                        initialize_self_field = solver == 'EM')
+                        initialize_self_field = solver_type == 'EM')
 
         picmi.warp.installuserinjection(self.bunched_beam)
 
@@ -209,13 +209,13 @@ class warp_pyecloud_sim:
                       temps_filename = temps_filename,
                       output_filename = output_filename)
  
-        solver.solver.installconductor(sim.conductors, 
+        self.solver.solver.installconductor(sim.conductors, 
                                        dfill = picmi.warp.largepos)
         sim.step(1)
 
         # Initialize the EM fields
         if self.init_em_fields:
-            em = solver.solver
+            em = self.solver.solver
             me = pw.me
           
             fields = sio.loadmat(self.file_em_fields)
