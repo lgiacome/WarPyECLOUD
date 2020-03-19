@@ -13,16 +13,17 @@ from warp_pyecloud_sim import warp_pyecloud_sim
 from chamber import CrabCavityWaveguide
 from lattice_elements import CrabFields
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
-enable_trap = True
+enable_trap = False
 
 N_mp_max = 6000000
 init_num_elecs = 2*10**7
 dh = 3.e-4
 
-nx = 20/2 
-ny = 15/2
-nz = 20/2
+nx = 200/2 
+ny = 150/2
+nz = 200/2
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -48,7 +49,7 @@ chamber = CrabCavityWaveguide(-max_z, max_z, disp = 5e-3)
 init_em_fields = True
 fields_folder = str(Path(os.getcwd()).parent.parent)
 file_em_fields = fields_folder + '/ey_cavity.mat'
-em_scale_fac = 1e6
+em_scale_fac = (10/35)*1e6
 
 def plots_crab(self, l_force = 0):
     fontsz = 16
@@ -60,27 +61,43 @@ def plots_crab(self, l_force = 0):
     plt.rcParams['legend.title_fontsize'] = fontsz
 
     chamber = self.chamber
-    k_antenna = int((self.source_z - zmin)/em.dz)
-    j_mid_waveguide = int((chamber.ycen6 - ymin)/em.dy)
+    if self.laser_source_z is None: self.laser_source_z = chamber.zmin + 0.5*(-chamber.l_main_z/2-chamber.zmin)
+    em = self.solver.solver
+    k_antenna = int((self.laser_source_z - chamber.zmin)/em.dz)
+    j_mid_waveguide = int((chamber.ycen6 - chamber.ymin)/em.dy)
+    xmin = chamber.xmin
+    xmax = chamber.xmax
+    ymin = chamber.ymin
+    ymax = chamber.ymax
+    zmin = chamber.zmin
+    zmax = chamber.zmax
+
     flist = ['Ex','Ey','Ez','Bx','By','Bz']
-    flist = ['Ey']
+    flist = ['Ey','elecs']
+    pw = picmi.warp
     if pw.top.it%10==0 or l_force:
+        fig = plt.figure( figsize=(7,7))
         for ffstr in flist:
             if ffstr == 'Ex': ff = em.gatherex()
-            if ffstr == 'Ey': ff = em.gatherey()
+            if ffstr == 'Ey': 
+                ff = em.gatherey()
+                maxe =35*self.em_scale_fac #np.max(ey[:,:,:])
+                mine = -35*self.em_scale_fac #np.min(ey[:,:,:])
             if ffstr == 'Ez': ff = em.gatherez()
             if ffstr == 'Bx': ff = em.gatherbx()
             if ffstr == 'By': ff = em.gatherby()
             if ffstr == 'Bz': ff = em.gatherbz()
+            if ffstr == 'elecs': 
+                ff = self.ecloud.wspecies.get_density()
+                maxe = 5e9 #np.max(ey[:,:,:])
+                mine = 0 #np.min(ey[:,:,:])
             if me==0:
-                maxe =35 #np.max(ey[:,:,:])
-                mine = -35 #np.min(ey[:,:,:])
                 cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
                 cmap = mpl.cm.jet
                 Nx = nx + 1
                 Ny = ny + 1
-                ey00 = ff[:,:,chamber.k_antenna]
-                ey01 = ff[:,chamber.j_mid_waveguide,:]
+                ey00 = ff[:,:,k_antenna]
+                ey01 = ff[:,j_mid_waveguide,:]
                 ey10 = ff[:,int(Ny/2),:]
                 ey11 = ff[int(Nx/2),:,:]
                 ax = plt.subplot2grid((2,2), (0,0))
@@ -98,8 +115,8 @@ def plots_crab(self, l_force = 0):
                 ax.set_ylabel('y')
                 ax = plt.subplot2grid((2,2), (0,1))
                 ax.imshow(np.flipud(ey01.T), cmap = cmap, vmin=mine,vmax = maxe, extent=[xmin, xmax, zmin, zmax], aspect = 'auto')
-                plt.vlines(x = chamber.x_min_wg, ymin = z_min_wg, ymax = chamber.z_rest, color='black',lw=lw)
-                plt.vlines(x = chamber.x_max_wg, ymin = z_min_wg, ymax = chamber.z_rest, color='black',lw=lw)
+                plt.vlines(x = chamber.x_min_wg, ymin = chamber.z_min_wg, ymax = chamber.z_rest, color='black',lw=lw)
+                plt.vlines(x = chamber.x_max_wg, ymin = chamber.z_min_wg, ymax = chamber.z_rest, color='black',lw=lw)
                 plt.vlines(x = chamber.x_min_wg_rest, ymin = chamber.z_rest, ymax = -chamber.l_main_z/2, color='black',lw=lw)
                 plt.vlines(x = chamber.x_max_wg_rest, ymin = chamber.z_rest, ymax = -chamber.l_main_z/2, color='black',lw=lw)
                 plt.hlines(y = chamber.z_rest, xmin = chamber.x_min_wg, xmax = chamber.x_min_wg_rest, color='black',lw=lw)
@@ -169,11 +186,11 @@ def plots_crab(self, l_force = 0):
                 fig.colorbar(im, cax=cbar_ax)
                 fig.suptitle('Ey, t = %1.6e' %pw.top.time )
                 #fig.tight_layout()
-                if not os.path.exists('images_cavity'):
-                    os.mkdir('images_cavity')
-                filename = 'images_cavity/it_' + str(pw.top.it).zfill(5) + '.png'
+                if not os.path.exists('images_cavity/' + ffstr):
+                    os.mkdir('images_cavity/' + ffstr)
+                filename = 'images_cavity/' + ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
                 plt.savefig(filename, dpi=150)
-                fig.clf()
+                plt.clf()
 
 
 
@@ -203,7 +220,7 @@ kwargs = {'enable_trap': enable_trap,
     'secondary_angle_distribution': 'cosine_3D', 
     'N_mp_max': N_mp_max,
     'N_mp_target': N_mp_max/3,
-    'flag_checkpointing': True,
+    'flag_checkpointing': False,
     'checkpoints': np.linspace(1, n_bunches, n_bunches),
     'temps_filename': 'complete_temp.h5',
     'flag_output': True,
