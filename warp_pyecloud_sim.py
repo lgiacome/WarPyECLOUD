@@ -39,7 +39,7 @@ class warp_pyecloud_sim:
                  laser_polangle = None, laser_emax = None, laser_xmin = None,
                  laser_xmax = None, laser_ymin = None, laser_ymax = None, 
                  init_em_fields = False, file_em_fields = None, em_scale_fac = 1,
-                 EM_method = 'Yee', cfl = 1):
+                 EM_method = 'Yee', cfl = 1.0):
         
 
         # Construct PyECLOUD secondary emission object
@@ -83,6 +83,7 @@ class warp_pyecloud_sim:
         self.laser_xmax = laser_xmax
         self.laser_ymin = laser_ymin
         self.laser_ymax = laser_ymax
+        self.cfl = cfl
         # Just some shortcuts
         pw = picmi.warp
         step = pw.step
@@ -95,7 +96,6 @@ class warp_pyecloud_sim:
         elif solver_type == 'EM':
             if dt is not None:
                 print('WARNING: dt is going to ignored for the EM solver')
-            self.cfl = cfl
             self.EM_method = EM_method
             
         if flag_relativ_tracking:
