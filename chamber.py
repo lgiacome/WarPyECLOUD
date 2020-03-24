@@ -133,7 +133,6 @@ class CrabCavity:
 
         self.z_start = z_start
         self.z_end = z_end
-        self.disp = disp
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
