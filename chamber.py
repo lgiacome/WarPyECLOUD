@@ -279,7 +279,7 @@ class CrabCavityWaveguide:
                               ysize = self.y_max_wg - self.y_min_wg, 
                               ycent = self.ycen6, zcent = self.zcen6)                              
         self.ycen7 = 0.5*(self.y_min_wg + self.y_max_wg)
-        self.zcen7 = 0.5*(self.z_min_wg + self.z_max_wg)
+        self.zcen7 = 0.5*(self.z_min_wg + self.z_rest)
         box7 = picmi.warp.Box(zsize = self.z_rest - self.z_min_wg,
                               xsize = self.x_max_wg - self.x_min_wg, 
                               ysize = self.y_max_wg - self.y_min_wg, 

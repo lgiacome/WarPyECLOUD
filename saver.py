@@ -1,7 +1,8 @@
 import numpy as np
 import os
-from h5py_manager import dict_of_arrays_and_scalar_from_h5, dict_to_h5
+from h5py_manager import dict_of_arrays_and_scalar_from_h5, dict_to_h5, dict_to_h5_serial
 from warp import *
+from warp import picmi
 
 class Saver:
 
@@ -56,7 +57,8 @@ class Saver:
             dict_out_temp['bins'] = self.bins
 
         dict_out_temp['b_pass'] = b_pass 
-
+        dict_out_temp['ecloud_density'] = elecbw.get_density()
+    
         dict_to_h5(dict_out_temp, self.temps_filename)
 
     def update_outputs(self, ew, nz, n_step):
@@ -88,4 +90,17 @@ class Saver:
                                                      density = False)
         dict_out['bins'] = self.bins
         dict_out['xhist'] = self.xhist
-        dict_out_temp = dict_to_h5(dict_out, self.output_filename)
+        dict_to_h5(dict_out, self.output_filename)
+
+    def dump_em_fields(em, folder, filename):
+        if not os.path.exists(folder+'/'+str(picmi.warp.me)):
+            os.makedirs(folder+'/'+str(picmi.warp.me))
+        dict_out = {}
+        dict_out['ex'] = em.getexg(guards=1)
+        dict_out['ey'] = em.geteyg(guards=1)
+        dict_out['ez'] = em.getezg(guards=1)
+        dict_out['bx'] = em.getbxg(guards=1)
+        dict_out['by'] = em.getbyg(guards=1)
+        dict_out['bz'] = em.getbzg(guards=1)
+        dict_to_h5_serial(dict_out, folder+'/'+str(picmi.warp.me)+'/'+filename) 
+
