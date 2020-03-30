@@ -39,8 +39,8 @@ class warp_pyecloud_sim:
                  laser_polangle = None, laser_emax = None, laser_xmin = None,
                  laser_xmax = None, laser_ymin = None, laser_ymax = None, 
                  init_em_fields = False, file_em_fields = None, em_scale_fac = 1,
-                 EM_method = 'Yee', cfl = 1.0):
-        
+                 EM_method = 'Yee', cfl = 1.0, ecloud_sim = True,
+                 folder_em_fields = None): 
 
         # Construct PyECLOUD secondary emission object
         sey_mod = seec.SEY_model_ECLOUD(Emax = Emax, del_max = del_max, R0 = R0,
@@ -88,6 +88,7 @@ class warp_pyecloud_sim:
         pw = picmi.warp
         step = pw.step
         self.init_em_fields = init_em_fields
+        self.folder_em_fields = folder_em_fields
         self.file_em_fields = file_em_fields
         self.em_scale_fac = em_scale_fac
         self.enable_trap = enable_trap 
@@ -202,7 +203,9 @@ class warp_pyecloud_sim:
         sim.add_species(self.ecloud, layout = self.ecloud_layout,
                         initialize_self_field = solver_type == 'EM')
 
-        picmi.warp.installuserinjection(self.bunched_beam)
+        if self.bunch_macro_particles > 0:
+            picmi.warp.installuserinjection(self.bunched_beam)
+        
 
         sim.step(1)
         self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
@@ -220,34 +223,16 @@ class warp_pyecloud_sim:
             em = self.solver.solver
             me = pw.me
           
-            fields = sio.loadmat(self.file_em_fields)
-          
-            my_ex = fields['ex'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-            my_ey = fields['ey'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-            my_ez = fields['ez'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-            my_bx = fields['bx'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-            my_by = fields['by'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
-            my_bz = fields['bz'][:,:,top.izpslave[me]:top.izpslave[me]+top.nzpslave[me]+1]
+            fields = dict_of_arrays_and_scalar_from_h5_serial(self.folder_em_fields+'/'+str(picmi.warp.me)+'/'+self.file_em_fields) 
 
-            em.fields.Ex[em.nxguard : em.nxp + em.nxguard + 1,
-                         em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_ex*self.em_scale_fac
-            em.fields.Ey[em.nxguard : em.nxp + em.nxguard + 1,
-                         em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_ey*self.em_scale_fac
-            em.fields.Ez[em.nxguard : em.nxp + em.nxguard + 1,
-                         em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_ez*self.em_scale_fac
-            em.fields.Bx[em.nxguard : em.nxp + em.nxguard + 1,
-                         em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_bx*self.em_scale_fac
-            em.fields.By[em.nxguard : em.nxp + em.nxguard + 1,
-                         em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_by*self.em_scale_fac
-            em.fields.Bz[em.nxguard : em.nxp + em.nxguard + 1,
-                         em.nyguard : em.nyp + em.nyguard + 1,
-                         em.nzguard : em.nzp + em.nzguard + 1] = my_bz*self.em_scale_fac      
-          
+            em.fields.Ex = fields['ex']*self.em_scale_fac
+            em.fields.Ey = fields['ey']*self.em_scale_fac
+            em.fields.Ez = fields['ez']*self.em_scale_fac
+            em.fields.Bx = fields['bx']*self.em_scale_fac
+            em.fields.By = fields['by']*self.em_scale_fac
+            em.fields.Bz = fields['bz']*self.em_scale_fac      
+            em.setebp()
+  
         # Setup secondary emission stuff       
         pp = warp.ParticleScraper(sim.conductors, lsavecondid = 1, 
                                   lsaveintercept = 1,lcollectlpdata = 1)
@@ -354,6 +339,12 @@ class warp_pyecloud_sim:
 
     def all_steps(self):
         self.step(self.tot_nsteps-self.n_step)
+
+    def all_steps_no_ecloud(self, n_steps):
+        for i in tqdm(range(n_steps)):
+            sys.stdout = self.text_trap
+            picmi.warp.step(1)
+            sys.stdout = self.original
 
     def init_uniform_density(self):
         chamber = self.chamber
