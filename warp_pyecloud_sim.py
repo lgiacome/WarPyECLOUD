@@ -4,7 +4,7 @@ import numpy.random as random
 from warp import picmi
 from warp import *
 from scipy.stats import gaussian_kde
-from warp.particles.Secondaries import Secondaries, top, warp, time
+from warp.particles.Secondaries import Secondaries, top, warp, time, dump, restart
 import matplotlib.pyplot as plt
 from io import StringIO
 from scipy.constants import c as clight
@@ -39,7 +39,7 @@ class warp_pyecloud_sim:
                  laser_polangle = None, laser_emax = None, laser_xmin = None,
                  laser_xmax = None, laser_ymin = None, laser_ymax = None, 
                  init_em_fields = False, file_em_fields = None, em_scale_fac = 1,
-                 EM_method = 'Yee', cfl = 1):
+                 EM_method = 'Yee', cfl = 1.0):
         
 
         # Construct PyECLOUD secondary emission object
@@ -83,19 +83,21 @@ class warp_pyecloud_sim:
         self.laser_xmax = laser_xmax
         self.laser_ymin = laser_ymin
         self.laser_ymax = laser_ymax
+        self.cfl = cfl
         # Just some shortcuts
         pw = picmi.warp
         step = pw.step
         self.init_em_fields = init_em_fields
         self.file_em_fields = file_em_fields
         self.em_scale_fac = em_scale_fac
+        self.enable_trap = enable_trap 
+
         if solver_type == 'ES':
             pw.top.dt = dt
 
         elif solver_type == 'EM':
             if dt is not None:
                 print('WARNING: dt is going to ignored for the EM solver')
-            self.cfl = cfl
             self.EM_method = EM_method
             
         if flag_relativ_tracking:
@@ -277,7 +279,7 @@ class warp_pyecloud_sim:
         self.t0 = time.time()
         
         # trapping warp std output
-        self.text_trap = {True: StringIO(), False: sys.stdout}[enable_trap]
+        self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
         self.original = sys.stdout
 
         self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
@@ -473,4 +475,23 @@ class warp_pyecloud_sim:
 
     def self_wrapped_custom_plot(self, l_force = 0):
         self.custom_plot(self, l_force = l_force)
+
+
+    def dump(self, filename):
+        em.laser_func = None
+        del solver.em3dfft_args['laser_func']
+        self.text_trap = None
+        self.original = None        
+        dump(filename)
+
+    def restart(self,filename):
+        
+        restart(filename)
+        print('WarPyECLOUD restarting from %s' %filename)
+
+        em.laser_func = self.laser_func
+        solver.em3dfft_args['laser_func'] = self.laser_func
+        self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
+        self.original = sys.stdout 
+
 
