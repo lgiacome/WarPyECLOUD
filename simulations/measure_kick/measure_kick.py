@@ -17,9 +17,9 @@ import matplotlib.pyplot as plt
 enable_trap = True
 
 #Number of mesh nodes per direction
-nx = 50
-ny = 50
-nz = 200
+nx = 5
+ny = 5
+nz = 20
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -84,6 +84,7 @@ def plot_kick(self, l_force=0):
     plt.close()
 
 kwargs = {'enable_trap': enable_trap,
+    'solver_type': 'ES',
 	'nx': nx,
 	'ny': ny, 
 	'nz': nz,
