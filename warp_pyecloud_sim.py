@@ -15,6 +15,7 @@ import PyECLOUD.sec_emission_model_ECLOUD as seec
 from saver import Saver
 from h5py_manager import dict_of_arrays_and_scalar_from_h5
 import scipy.io as sio
+from tqdm import tqdm
 
 class warp_pyecloud_sim:
     def __init__(self, nx = None, ny = None, nz =None, 
@@ -29,7 +30,7 @@ class warp_pyecloud_sim:
                  secondary_angle_distribution = None, N_mp_max = None,
                  N_mp_target = None, flag_checkpointing = False, 
                  checkpoints = None, flag_output = False, 
-                 bunch_macro_particles = None, t_offs = None, width = None, 
+                 bunch_macro_particles = 0, t_offs = None, width = None, 
                  height = None, output_filename = 'output.h5', 
                  flag_relativ_tracking = False, nbins = 100, radius = None, 
                  ghost = None,ghost_z = None, stride_imgs = 10, 
@@ -469,20 +470,22 @@ class warp_pyecloud_sim:
 
 
     def dump(self, filename):
-        em.laser_func = None
-        del solver.em3dfft_args['laser_func']
+        self.solver.solver.laser_func = None
+        del self.solver.em3dfft_args['laser_func']
+        self.laser_func = None
         self.text_trap = None
         self.original = None        
+        self.custom_plot = None
+        #del self.chamber
         dump(filename)
 
-    def restart(self,filename):
-        
-        restart(filename)
-        print('WarPyECLOUD restarting from %s' %filename)
-
-        em.laser_func = self.laser_func
-        solver.em3dfft_args['laser_func'] = self.laser_func
+    def reinit(self, laser_func, custom_plot):
+        self.laser_func = laser_func
+        self.custom_plot = custom_plot
+        self.solver.solver.laser_func = self.laser_func
+        self.solver.em3dfft_args['laser_func'] = self.laser_func
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
-        self.original = sys.stdout 
+        self.original = sys.stdout
+        picmi.warp.installafterstep(self.self_wrapped_custom_plot) 
 
 
