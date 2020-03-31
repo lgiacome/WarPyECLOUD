@@ -1,0 +1,1 @@
+bsub -B -N -R "rusage[mem=4096]" -o /cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/restart_crab_cavity/restart_sim.out -n 20 -W 1440 mpirun -np 20 python /cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/restart_crab_cavity/consistent_sim.py -p 1 1 20
