@@ -16,7 +16,7 @@ from plots import plot_field_crab
 import matplotlib.pyplot as plt
 import mpi4py 
 
-enable_trap = True
+enable_trap = False
 
 N_mp_max = 0
 init_num_elecs = 0
@@ -74,7 +74,6 @@ def laser_func(y, x, t):
     else:
         return 0
 
-
 def plots_crab(self, l_force = 0):
     fontsz = 16
     plt.rcParams['axes.labelsize'] = fontsz
@@ -93,7 +92,6 @@ def plots_crab(self, l_force = 0):
 
     flist = ['Ex','Ey','Ez','Bx','By','Bz']
     flist = ['Ey']
-    print('BRABANZIO')
     pw = picmi.warp
     if pw.top.it%1==0 or l_force:
         #fig = plt.figure( figsize=(7,7))
@@ -114,6 +112,10 @@ def plots_crab(self, l_force = 0):
             if me==0:
                 plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber)
 
+'''
+def plots_crab(self, l_force = 0):
+    print('plotting something')
+'''
 
 kwargs = {'enable_trap': enable_trap,
     'ecloud_sim': False,

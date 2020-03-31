@@ -486,6 +486,6 @@ class warp_pyecloud_sim:
         self.solver.em3dfft_args['laser_func'] = self.laser_func
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
         self.original = sys.stdout
-        picmi.warp.installafterstep(self.self_wrapped_custom_plot) 
+#        picmi.warp.installafterstep(self.self_wrapped_custom_plot) 
 
 

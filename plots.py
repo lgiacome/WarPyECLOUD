@@ -106,11 +106,12 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber):
     fig.colorbar(im, cax=cbar_ax)
     fig.suptitle('Ey, t = %1.6e' %pw.top.time )
     #fig.tight_layout()
+    if not os.path.exists('images_cavity/'):
+        os.mkdir('images_cavity/')
     if not os.path.exists('images_cavity/' + ffstr):
         os.mkdir('images_cavity/' + ffstr)
         print(os.getcwd())
     filename = 'images_cavity/' + ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
     plt.savefig(filename, dpi=150)
-    print('BRABANZIO')
     plt.clf()
 
