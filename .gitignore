@@ -135,4 +135,6 @@ dmypy.json
 *.out
 *.cgmlog
 *.cgm
+*.h5
+*.hdf5
 #/simulations/scan_efield_cavity/simulations/*
