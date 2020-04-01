@@ -22,7 +22,7 @@ class warp_pyecloud_sim:
                  solver_type = 'ES', n_bunches = None, b_spac = None, 
                  beam_gamma = None, sigmax = None, sigmay = None, 
                  sigmat = None, bunch_intensity = None, init_num_elecs = None,
-                 init_num_elecs_mp = None, By = None, N_subcycle = None,
+                 init_num_elecs_mp = 0, By = None, N_subcycle = None,
                  pyecloud_nel_mp_ref = None, dt = None, 
                  pyecloud_fact_clean = None, pyecloud_fact_split = None,
                  enable_trap = True, Emax = None, del_max = None, R0 = None, 
@@ -41,7 +41,9 @@ class warp_pyecloud_sim:
                  laser_xmax = None, laser_ymin = None, laser_ymax = None, 
                  init_em_fields = False, file_em_fields = None, em_scale_fac = 1,
                  EM_method = 'Yee', cfl = 1.0, ecloud_sim = True,
-                 folder_em_fields = None): 
+                 folder_em_fields = None, after_step_fun_list = [], 
+                 field_probes = [], field_probes_dump_stride = 100, 
+                 tot_nsteps = None): 
 
         # Construct PyECLOUD secondary emission object
         sey_mod = seec.SEY_model_ECLOUD(Emax = Emax, del_max = del_max, R0 = R0,
@@ -66,6 +68,10 @@ class warp_pyecloud_sim:
         self.init_num_elecs_mp = init_num_elecs_mp
         self.init_num_elecs = init_num_elecs
         self.n_bunches = n_bunches
+        if n_bunches is not None and tot_nsteps is not None:
+            print("""WARNING: if both n_bunches and tot_nsteps are specified 
+                   tot_nsteps is going to be ignored and the number of steps is 
+                   going to be determined basing on n_bunches and dt""")        
         self.bunch_macro_particles = bunch_macro_particles
         self.sigmat = sigmat
         self.b_spac = b_spac
@@ -93,6 +99,9 @@ class warp_pyecloud_sim:
         self.file_em_fields = file_em_fields
         self.em_scale_fac = em_scale_fac
         self.enable_trap = enable_trap 
+        self.after_step_fun_list = after_step_fun_list
+        self.field_probes = field_probes
+        self.solver_type = solver_type
 
         if solver_type == 'ES':
             pw.top.dt = dt
@@ -120,20 +129,19 @@ class warp_pyecloud_sim:
         self.bunch_centroid_velocity = [0.,0., beam_gamma*picmi.constants.c]
 
         # Instantiate beam
+        electron_background_dist = self.init_uniform_density()
         self.beam = picmi.Species(particle_type = 'proton',
                              particle_shape = 'linear',
-                             name = 'beam')
+                             name = 'beam',
+                             initial_distribution = picmi.ParticleListDistribution())
         
         # If checkopoint is found reload it, 
         # otherwise start with uniform distribution
         if self.flag_checkpointing and os.path.exists(self.temps_filename): 
             electron_background_dist = self.load_elec_density()
         else:
-            if init_num_elecs > 0: 
-                electron_background_dist = self.init_uniform_density()
-            else:
-                electron_background_dist = None
-                self.b_pass = 0
+            electron_background_dist = self.init_uniform_density()           
+            self.b_pass = 0
 
         self.flag_first_pass = True
 
@@ -162,9 +170,9 @@ class warp_pyecloud_sim:
                                      lower_boundary_conditions = lower_bc,
                                      upper_boundary_conditions = upper_bc)
 
-        if solver_type == 'ES':
+        if self.solver_type == 'ES':
             self.solver = picmi.ElectrostaticSolver(grid = grid)
-        elif solver_type == 'EM':
+        elif self.solver_type == 'EM':
             smoother = picmi.BinomialSmoother(n_pass = [[1], [1], [1]],
                     compensation = [[False], [False], [False]],
                     stride = [[1], [1], [1]],
@@ -185,8 +193,7 @@ class warp_pyecloud_sim:
                                           warp_laser_xmax = self.laser_xmax,
                                           warp_laser_ymin = self.laser_ymin,
                                           warp_laser_ymax = self.laser_ymax)
- 
-                     
+                      
         # Setup simulation
         sim = picmi.Simulation(solver = self.solver, verbose = 1, cfl = self.cfl,
                                warp_initialize_solver_after_generate = 1)
@@ -198,7 +205,7 @@ class warp_pyecloud_sim:
                         initialize_self_field = solver_type == 'EM')
 
         self.ecloud_layout = picmi.PseudoRandomLayout(
-                                          n_macroparticles = init_num_elecs_mp,
+                                          n_macroparticles = self.init_num_elecs_mp,
                                           seed = 3)
 
         sim.add_species(self.ecloud, layout = self.ecloud_layout,
@@ -209,9 +216,15 @@ class warp_pyecloud_sim:
         
 
         sim.step(1)
-        self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
+        if n_bunches is not None:
+            self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
+        elif n_bunches is None and tot_nsteps is not None:
+            self.tot_nsteps = tot_nsteps
+        else:
+            raise Exception('One between n_bunches and tot_nsteps has to be specified')
+
         self.saver = Saver(flag_output, flag_checkpointing, 
-                      self.tot_nsteps, n_bunches, nbins, 
+                      self.tot_nsteps, n_bunches, nbins, self.solver,
                       temps_filename = temps_filename,
                       output_filename = output_filename)
  
@@ -220,19 +233,19 @@ class warp_pyecloud_sim:
         sim.step(1)
 
         # Initialize the EM fields
-        if self.init_em_fields:
-            em = self.solver.solver
-            me = pw.me
-          
-            fields = dict_of_arrays_and_scalar_from_h5_serial(self.folder_em_fields+'/'+str(picmi.warp.me)+'/'+self.file_em_fields) 
+        #if self.init_em_fields:
+        #    em = self.solver.solver
+        #    me = pw.me
+        #  
+        #    fields = dict_of_arrays_and_scalar_from_h5_serial(self.folder_em_fields+'/'+str(picmi.warp.me)+'/'+self.file_em_fields) 
 
-            em.fields.Ex = fields['ex']*self.em_scale_fac
-            em.fields.Ey = fields['ey']*self.em_scale_fac
-            em.fields.Ez = fields['ez']*self.em_scale_fac
-            em.fields.Bx = fields['bx']*self.em_scale_fac
-            em.fields.By = fields['by']*self.em_scale_fac
-            em.fields.Bz = fields['bz']*self.em_scale_fac      
-            em.setebp()
+        #    em.fields.Ex = fields['ex']*self.em_scale_fac
+        #    em.fields.Ey = fields['ey']*self.em_scale_fac
+        #    em.fields.Ez = fields['ez']*self.em_scale_fac
+        #    em.fields.Bx = fields['bx']*self.em_scale_fac
+        #    em.fields.By = fields['by']*self.em_scale_fac
+        #    em.fields.Bz = fields['bz']*self.em_scale_fac      
+        #    em.setebp()
   
         # Setup secondary emission stuff       
         pp = warp.ParticleScraper(sim.conductors, lsavecondid = 1, 
@@ -257,6 +270,20 @@ class warp_pyecloud_sim:
             plot_func = self.myplots
 
         pw.installafterstep(plot_func)
+
+        # Install field probes
+        if len(self.field_probes)>0:
+            self.saver.init_field_probes(np.shape(self.field_probes)[0], 
+                                         self.tot_nsteps, 
+                                         field_probes_dump_stride)
+
+        for i, pp in enumerate(self.field_probes):
+            self_wrapped_probe_fun_i = lambda : self.saver.field_probe(i, pp)
+            pw.installafterstep(self_wrapped_probe_fun_i)
+
+        # Install other user-specified functions
+        for fun in self.after_step_fun_list:
+            pw.installafterstep(fun)
 
         self.ntsteps_p_bunch = int(np.round(b_spac/top.dt))
 
@@ -341,8 +368,9 @@ class warp_pyecloud_sim:
     def all_steps(self):
         self.step(self.tot_nsteps-self.n_step)
 
-    def all_steps_no_ecloud(self, n_steps):
-        for i in tqdm(range(n_steps)):
+    def all_steps_no_ecloud(self):
+        for i in tqdm(range(self.tot_nsteps)):
+            #breakpoint()
             sys.stdout = self.text_trap
             picmi.warp.step(1)
             sys.stdout = self.original

@@ -16,14 +16,14 @@ from plots import plot_field_crab
 import matplotlib.pyplot as plt
 import mpi4py 
 
-enable_trap = False
+enable_trap = True
 
 N_mp_max = 0
 init_num_elecs = 0
 
-nx = 100
-ny = 100
-nz = 100
+nx = 30
+ny = 30
+nz = 30
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -112,10 +112,12 @@ def plots_crab(self, l_force = 0):
             if me==0:
                 plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber)
 
-'''
-def plots_crab(self, l_force = 0):
-    print('plotting something')
-'''
+
+#def plots_crab(self, l_force = 0):
+    #print('plotting something')
+#    pass
+
+field_probes = [[int(nx/2),int(ny/2),int(nz/2)]]
 
 kwargs = {'enable_trap': enable_trap,
     'ecloud_sim': False,
@@ -123,7 +125,6 @@ kwargs = {'enable_trap': enable_trap,
 	'nx': nx,
 	'ny': ny, 
 	'nz': nz,
-	'n_bunches': n_bunches,
     'Emax': 332., 
     'del_max': 1.7,
     'R0': 0.7, 
@@ -143,7 +144,7 @@ kwargs = {'enable_trap': enable_trap,
     'bunch_macro_particles': 0,
     'sigmat': sigmat,
     'init_num_elecs': 0,
-    'init_num_elecs_mp': 0,
+    'init_num_elecs_mp': 1,
     'bunch_macro_particles': 0,
     'b_spac': 25e-9,
     'beam_gamma': 1,
@@ -153,7 +154,7 @@ kwargs = {'enable_trap': enable_trap,
     'custom_plot': plots_crab,
     'stride_imgs': 10,
     'EM_method': 'Yee',
-    'cfl': 1,
+    'cfl': 1.,
     'laser_func': laser_func,
     'laser_source_z': laser_source_z,
     'laser_polangle': laser_polangle,
@@ -162,17 +163,20 @@ kwargs = {'enable_trap': enable_trap,
     'laser_xmax': laser_xmax,
     'laser_ymin': laser_ymin,
     'laser_ymax': laser_ymax,
+    'tot_nsteps': 500,
+    'field_probes': field_probes,
+    'field_probes_dump_stride': 10
 }
 
 sim = warp_pyecloud_sim(**kwargs)
 kwargs = None
 #n_steps = 12440
-n_steps = 10
-sim.all_steps_no_ecloud(n_steps)
-base_folder = str(Path(os.getcwd()).parent.parent)
-cwd = str(Path(os.getcwd()))
-folder = base_folder + '/dumps'
-if picmi.warp.me == 0 and not os.path.exists(folder):
-    os.makedirs(folder)
-sim.dump(folder+ '/cavity.%d.dump' %picmi.warp.me)
+#n_steps = 10
+sim.all_steps_no_ecloud()
+#base_folder = str(Path(os.getcwd()).parent.parent)
+#cwd = str(Path(os.getcwd()))
+#folder = base_folder + '/dumps'
+#if picmi.warp.me == 0 and not os.path.exists(folder):
+#    os.makedirs(folder)
+#sim.dump(folder+ '/cavity.%d.dump' %picmi.warp.me)
 

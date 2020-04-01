@@ -7,7 +7,7 @@ from warp import picmi
 class Saver:
 
     def __init__(self, flag_output, flag_checkpointing, tot_nsteps, n_bunches,
-                 nbins, output_filename= None, temps_filename = None):
+                 nbins, solver, output_filename= None, temps_filename = None):
         self.flag_checkpointing = flag_checkpointing
         self.flag_output = flag_output
         self.temps_filename = temps_filename
@@ -15,6 +15,7 @@ class Saver:
         self.n_bunches = n_bunches
         self.nbins = nbins
         self.output_filename = output_filename
+        self.solver = solver
 
         if (self.flag_output and not
            (self.flag_checkpointing and os.path.exists(self.temps_filename))):
@@ -26,7 +27,8 @@ class Saver:
         self.numelecs = np.zeros(self.tot_nsteps)
         self.numelecs_tot = np.zeros(self.tot_nsteps)
         self.N_mp = np.zeros(self.tot_nsteps)
-        self.xhist = np.zeros((self.n_bunches,self.nbins))
+        if self.n_bunches is not None:
+            self.xhist = np.zeros((self.n_bunches,self.nbins))
         self.bins = np.zeros(self.nbins)
 
     def restore_outputs_from_file(self):
@@ -83,7 +85,8 @@ class Saver:
         dict_out['numelecs_tot'] = self.numelecs_tot
         dict_out['N_mp'] = self.N_mp
         # Compute the x-position histogram
-        (self.xhist[b_pass-1], self.bins) = np.histogram(elecbw.getx(), 
+        if self.n_bunches is not None:
+            (self.xhist[b_pass-1], self.bins) = np.histogram(elecbw.getx(), 
                                                      range = (xmin,xmax), 
                                                      bins = self.nbins, 
                                                      weights = elecbw.getw(), 
@@ -103,4 +106,40 @@ class Saver:
         dict_out['by'] = em.getbyg(guards=1)
         dict_out['bz'] = em.getbzg(guards=1)
         dict_to_h5_serial(dict_out, folder+'/'+str(picmi.warp.me)+'/'+filename) 
+
+    def init_field_probes(self, Nprobes, tot_nsteps, field_probes_dump_stride):
+        self.Nprobes = Nprobes
+        self.e_x_vec = np.zeros((Nprobes, tot_nsteps))
+        self.e_y_vec = np.zeros((Nprobes, tot_nsteps))
+        self.e_z_vec = np.zeros((Nprobes, tot_nsteps))
+        self.b_x_vec = np.zeros((Nprobes, tot_nsteps))
+        self.b_y_vec = np.zeros((Nprobes, tot_nsteps))
+        self.b_z_vec = np.zeros((Nprobes, tot_nsteps))
+        self.t_probes = np.zeros(tot_nsteps)
+        self.field_probes_dump_stride = field_probes_dump_stride
+
+    def field_probe(self, probe_i, pp):
+        pw = picmi.warp
+        em = self.solver.solver
+        self.e_x_vec[probe_i, pw.top.it-3] = em.gatherex()[pp[0],pp[1],pp[2]]
+        self.e_y_vec[probe_i, pw.top.it-3] = em.gatherey()[pp[0],pp[1],pp[2]]
+        self.e_z_vec[probe_i, pw.top.it-3] = em.gatherez()[pp[0],pp[1],pp[2]]
+        self.b_x_vec[probe_i, pw.top.it-3] = em.gatherbx()[pp[0],pp[1],pp[2]]
+        self.b_y_vec[probe_i, pw.top.it-3] = em.gatherby()[pp[0],pp[1],pp[2]]
+        self.b_z_vec[probe_i, pw.top.it-3] = em.gatherbz()[pp[0],pp[1],pp[2]]
+        #Save if specified by the user and if all the probes have been processed
+        stride = self.field_probes_dump_stride
+        if probe_i == self.Nprobes-1:
+            self.t_probes[pw.top.it-3]= pw.top.time
+            if pw.top.it%stride == 0:
+                dict_out = {}
+                dict_out['ex'] = self.e_x_vec
+                dict_out['ey'] = self.e_y_vec
+                dict_out['ez'] = self.e_z_vec
+                dict_out['bx'] = self.b_x_vec
+                dict_out['by'] = self.b_y_vec
+                dict_out['bz'] = self.b_z_vec
+                dict_out['t_probes'] = self.t_probes
+                filename = 'probes.h5'
+                dict_to_h5(dict_out, filename)
 
