@@ -121,13 +121,19 @@ class Saver:
     def field_probe(self, probe_i, pp):
         pw = picmi.warp
         em = self.solver.solver
+        ex = em.gatherex()
+        ey = em.gatherey()
+        ez = em.gatherez()
+        bx = em.gatherbx()
+        by = em.gatherby()
+        bz = em.gatherbz()
         if me ==0:
-            self.e_x_vec[probe_i, pw.top.it-3] = em.gatherex()[pp[0],pp[1],pp[2]]
-            self.e_y_vec[probe_i, pw.top.it-3] = em.gatherey()[pp[0],pp[1],pp[2]]
-            self.e_z_vec[probe_i, pw.top.it-3] = em.gatherez()[pp[0],pp[1],pp[2]]
-            self.b_x_vec[probe_i, pw.top.it-3] = em.gatherbx()[pp[0],pp[1],pp[2]]
-            self.b_y_vec[probe_i, pw.top.it-3] = em.gatherby()[pp[0],pp[1],pp[2]]
-            self.b_z_vec[probe_i, pw.top.it-3] = em.gatherbz()[pp[0],pp[1],pp[2]]
+            self.e_x_vec[probe_i, pw.top.it-3] = ex[pp[0],pp[1],pp[2]]
+            self.e_y_vec[probe_i, pw.top.it-3] = ey[pp[0],pp[1],pp[2]]
+            self.e_z_vec[probe_i, pw.top.it-3] = ez[pp[0],pp[1],pp[2]]
+            self.b_x_vec[probe_i, pw.top.it-3] = bx[pp[0],pp[1],pp[2]]
+            self.b_y_vec[probe_i, pw.top.it-3] = by[pp[0],pp[1],pp[2]]
+            self.b_z_vec[probe_i, pw.top.it-3] = bz[pp[0],pp[1],pp[2]]
             #Save if specified by the user and if all the probes have been processed
             stride = self.field_probes_dump_stride
             if probe_i == self.Nprobes-1:

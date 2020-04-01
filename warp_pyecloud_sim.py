@@ -79,7 +79,7 @@ class warp_pyecloud_sim:
         self.temps_filename = temps_filename
         self.custom_plot = custom_plot
         self.images_dir = images_dir
-        if not os.path.exists(images_dir):
+        if not os.path.exists(images_dir) and picmi.warp.me==0:
             os.makedirs(images_dir)
         self.lattice_elem = lattice_elem
         self.laser_func = laser_func
@@ -369,11 +369,19 @@ class warp_pyecloud_sim:
         self.step(self.tot_nsteps-self.n_step)
 
     def all_steps_no_ecloud(self):
-        for i in tqdm(range(self.tot_nsteps)):
-            #breakpoint()
-            sys.stdout = self.text_trap
-            picmi.warp.step(1)
-            sys.stdout = self.original
+        if picmi.warp.me == 0:
+            for i in tqdm(range(self.tot_nsteps)):
+                #breakpoint()
+                sys.stdout = self.text_trap
+                picmi.warp.step(1)
+                sys.stdout = self.original
+        else:
+            for i in range(self.tot_nsteps):
+                #breakpoint()
+                sys.stdout = self.text_trap
+                picmi.warp.step(1)
+                sys.stdout = self.original
+
 
     def init_uniform_density(self):
         chamber = self.chamber
