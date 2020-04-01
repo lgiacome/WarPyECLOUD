@@ -121,25 +121,26 @@ class Saver:
     def field_probe(self, probe_i, pp):
         pw = picmi.warp
         em = self.solver.solver
-        self.e_x_vec[probe_i, pw.top.it-3] = em.gatherex()[pp[0],pp[1],pp[2]]
-        self.e_y_vec[probe_i, pw.top.it-3] = em.gatherey()[pp[0],pp[1],pp[2]]
-        self.e_z_vec[probe_i, pw.top.it-3] = em.gatherez()[pp[0],pp[1],pp[2]]
-        self.b_x_vec[probe_i, pw.top.it-3] = em.gatherbx()[pp[0],pp[1],pp[2]]
-        self.b_y_vec[probe_i, pw.top.it-3] = em.gatherby()[pp[0],pp[1],pp[2]]
-        self.b_z_vec[probe_i, pw.top.it-3] = em.gatherbz()[pp[0],pp[1],pp[2]]
-        #Save if specified by the user and if all the probes have been processed
-        stride = self.field_probes_dump_stride
-        if probe_i == self.Nprobes-1:
-            self.t_probes[pw.top.it-3]= pw.top.time
-            if pw.top.it%stride == 0:
-                dict_out = {}
-                dict_out['ex'] = self.e_x_vec
-                dict_out['ey'] = self.e_y_vec
-                dict_out['ez'] = self.e_z_vec
-                dict_out['bx'] = self.b_x_vec
-                dict_out['by'] = self.b_y_vec
-                dict_out['bz'] = self.b_z_vec
-                dict_out['t_probes'] = self.t_probes
-                filename = 'probes.h5'
-                dict_to_h5(dict_out, filename)
+        if me ==0:
+            self.e_x_vec[probe_i, pw.top.it-3] = em.gatherex()[pp[0],pp[1],pp[2]]
+            self.e_y_vec[probe_i, pw.top.it-3] = em.gatherey()[pp[0],pp[1],pp[2]]
+            self.e_z_vec[probe_i, pw.top.it-3] = em.gatherez()[pp[0],pp[1],pp[2]]
+            self.b_x_vec[probe_i, pw.top.it-3] = em.gatherbx()[pp[0],pp[1],pp[2]]
+            self.b_y_vec[probe_i, pw.top.it-3] = em.gatherby()[pp[0],pp[1],pp[2]]
+            self.b_z_vec[probe_i, pw.top.it-3] = em.gatherbz()[pp[0],pp[1],pp[2]]
+            #Save if specified by the user and if all the probes have been processed
+            stride = self.field_probes_dump_stride
+            if probe_i == self.Nprobes-1:
+                self.t_probes[pw.top.it-3]= pw.top.time
+                if pw.top.it%stride == 0:
+                    dict_out = {}
+                    dict_out['ex'] = self.e_x_vec
+                    dict_out['ey'] = self.e_y_vec
+                    dict_out['ez'] = self.e_z_vec
+                    dict_out['bx'] = self.b_x_vec
+                    dict_out['by'] = self.b_y_vec
+                    dict_out['bz'] = self.b_z_vec
+                    dict_out['t_probes'] = self.t_probes
+                    filename = 'probes.h5'
+                    dict_to_h5(dict_out, filename)
 
