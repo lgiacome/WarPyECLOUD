@@ -21,9 +21,9 @@ enable_trap = True
 N_mp_max = 0
 init_num_elecs = 0
 
-nx = 30
-ny = 30
-nz = 30
+nx = 100
+ny = 75
+nz = 100
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -113,9 +113,9 @@ def plots_crab(self, l_force = 0):
                 plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber)
 
 
-#def plots_crab(self, l_force = 0):
-    #print('plotting something')
-#    pass
+def plots_crab(self, l_force = 0):
+    print('plotting something')
+    pass
 
 field_probes = [[int(nx/2),int(ny/2),int(nz/2)]]
 
@@ -163,20 +163,18 @@ kwargs = {'enable_trap': enable_trap,
     'laser_xmax': laser_xmax,
     'laser_ymin': laser_ymin,
     'laser_ymax': laser_ymax,
-    'tot_nsteps': 500,
+    'tot_nsteps': 5000,
     'field_probes': field_probes,
-    'field_probes_dump_stride': 10
+    'field_probes_dump_stride': 100
 }
 
 sim = warp_pyecloud_sim(**kwargs)
-kwargs = None
-#n_steps = 12440
-#n_steps = 10
 sim.all_steps_no_ecloud()
-#base_folder = str(Path(os.getcwd()).parent.parent)
-#cwd = str(Path(os.getcwd()))
-#folder = base_folder + '/dumps'
-#if picmi.warp.me == 0 and not os.path.exists(folder):
-#    os.makedirs(folder)
-#sim.dump(folder+ '/cavity.%d.dump' %picmi.warp.me)
+kwargs = None
+base_folder = str(Path(os.getcwd()).parent.parent)
+cwd = str(Path(os.getcwd()))
+folder = base_folder + '/dumps'
+if picmi.warp.me == 0 and not os.path.exists(folder):
+    os.makedirs(folder)
+sim.dump(folder+ '/cavity.%d.dump' %picmi.warp.me)
 
