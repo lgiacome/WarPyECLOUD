@@ -109,13 +109,13 @@ class Saver:
 
     def init_field_probes(self, Nprobes, tot_nsteps, field_probes_dump_stride):
         self.Nprobes = Nprobes
-        self.e_x_vec = np.zeros((Nprobes, tot_nsteps))
-        self.e_y_vec = np.zeros((Nprobes, tot_nsteps))
-        self.e_z_vec = np.zeros((Nprobes, tot_nsteps))
-        self.b_x_vec = np.zeros((Nprobes, tot_nsteps))
-        self.b_y_vec = np.zeros((Nprobes, tot_nsteps))
-        self.b_z_vec = np.zeros((Nprobes, tot_nsteps))
-        self.t_probes = np.zeros(tot_nsteps)
+        self.e_x_vec = np.zeros((Nprobes, tot_nsteps-2))
+        self.e_y_vec = np.zeros((Nprobes, tot_nsteps-2))
+        self.e_z_vec = np.zeros((Nprobes, tot_nsteps-2))
+        self.b_x_vec = np.zeros((Nprobes, tot_nsteps-2))
+        self.b_y_vec = np.zeros((Nprobes, tot_nsteps-2))
+        self.b_z_vec = np.zeros((Nprobes, tot_nsteps-2))
+        self.t_probes = np.zeros(tot_nsteps-2)
         self.field_probes_dump_stride = field_probes_dump_stride
 
     def field_probe(self, probe_i, pp):
