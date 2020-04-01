@@ -142,5 +142,5 @@ class Saver:
                     dict_out['bz'] = self.b_z_vec
                     dict_out['t_probes'] = self.t_probes
                     filename = 'probes.h5'
-                    dict_to_h5(dict_out, filename)
+                    dict_to_h5_serial(dict_out, filename)
 
