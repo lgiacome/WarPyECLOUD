@@ -18,6 +18,7 @@ import scipy.io as sio
 from tqdm import tqdm
 
 class warp_pyecloud_sim:
+    
     def __init__(self, nx = None, ny = None, nz =None, 
                  solver_type = 'ES', n_bunches = None, b_spac = None, 
                  beam_gamma = None, sigmax = None, sigmay = None, 
@@ -277,9 +278,10 @@ class warp_pyecloud_sim:
                                          self.tot_nsteps, 
                                          field_probes_dump_stride)
 
-        for i, pp in enumerate(self.field_probes):
-            self_wrapped_probe_fun_i = lambda : self.saver.field_probe(i, pp)
-            pw.installafterstep(self_wrapped_probe_fun_i)
+        for i, pos_probe in enumerate(self.field_probes):
+            self.pos_probe = pos_probe
+            self.ind_probe = i
+            pw.installafterstep(self.self_wrapped_probe_fun_i)
 
         # Install other user-specified functions
         for fun in self.after_step_fun_list:
@@ -297,6 +299,9 @@ class warp_pyecloud_sim:
 
         self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
         plot_func(1)
+
+    def self_wrapped_probe_fun_i(self): 
+        self.saver.field_probe(self.ind_probe, self.pos_probe)
 
     def step(self, u_steps = 1):
         for u_step in range(u_steps):
@@ -372,15 +377,15 @@ class warp_pyecloud_sim:
         if picmi.warp.me == 0:
             for i in tqdm(range(self.tot_nsteps)):
                 #breakpoint()
-                sys.stdout = self.text_trap
+                #sys.stdout = self.text_trap
                 picmi.warp.step(1)
-                sys.stdout = self.original
+                #sys.stdout = self.original
         else:
             for i in range(self.tot_nsteps):
                 #breakpoint()
-                sys.stdout = self.text_trap
+                #sys.stdout = self.text_trap
                 picmi.warp.step(1)
-                sys.stdout = self.original
+                #sys.stdout = self.original
 
 
     def init_uniform_density(self):
@@ -522,6 +527,12 @@ class warp_pyecloud_sim:
         self.solver.em3dfft_args['laser_func'] = self.laser_func
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
         self.original = sys.stdout
+#        for i, pp in enumerate(self.field_probes):
+#            def self_wrapped_probe_fun_i():
+#                self.saver.field_probe(i, pp)
+#                picmi.warp.installafterstep(self_wrapped_probe_fun_i)
+        breakpoint()
+
 #        picmi.warp.installafterstep(self.self_wrapped_custom_plot) 
 
 

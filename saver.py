@@ -109,13 +109,13 @@ class Saver:
 
     def init_field_probes(self, Nprobes, tot_nsteps, field_probes_dump_stride):
         self.Nprobes = Nprobes
-        self.e_x_vec = np.zeros((Nprobes, tot_nsteps-2))
-        self.e_y_vec = np.zeros((Nprobes, tot_nsteps-2))
-        self.e_z_vec = np.zeros((Nprobes, tot_nsteps-2))
-        self.b_x_vec = np.zeros((Nprobes, tot_nsteps-2))
-        self.b_y_vec = np.zeros((Nprobes, tot_nsteps-2))
-        self.b_z_vec = np.zeros((Nprobes, tot_nsteps-2))
-        self.t_probes = np.zeros(tot_nsteps-2)
+        self.e_x_vec = np.zeros((Nprobes, tot_nsteps))
+        self.e_y_vec = np.zeros((Nprobes, tot_nsteps))
+        self.e_z_vec = np.zeros((Nprobes, tot_nsteps))
+        self.b_x_vec = np.zeros((Nprobes, tot_nsteps))
+        self.b_y_vec = np.zeros((Nprobes, tot_nsteps))
+        self.b_z_vec = np.zeros((Nprobes, tot_nsteps))
+        self.t_probes = np.zeros(tot_nsteps)
         self.field_probes_dump_stride = field_probes_dump_stride
 
     def field_probe(self, probe_i, pp):
@@ -149,4 +149,16 @@ class Saver:
                     dict_out['t_probes'] = self.t_probes
                     filename = 'probes.h5'
                     dict_to_h5_serial(dict_out, filename)
+
+    def extend_probe_vectors(self, n_add_steps):
+        add_zeros_fields = np.zeros((self.Nprobes, n_add_steps))
+        add_zeros_t = np.zeros(n_add_steps)
+        self.e_x_vec = np.concatenate((self.e_x_vec, add_zeros_fields), axis = 1) 
+        self.e_y_vec = np.concatenate((self.e_y_vec, add_zeros_fields), axis = 1) 
+        self.e_z_vec = np.concatenate((self.e_z_vec, add_zeros_fields), axis = 1) 
+        self.b_x_vec = np.concatenate((self.b_x_vec, add_zeros_fields), axis = 1) 
+        self.b_y_vec = np.concatenate((self.b_y_vec, add_zeros_fields), axis = 1) 
+        self.b_z_vec = np.concatenate((self.b_z_vec, add_zeros_fields), axis = 1)
+        self.b_z_vec = np.concatenate((self.b_z_vec, add_zeros_fields), axis = 1)
+        self.t_probes = np.concatenate((self.t_probes, add_zeros_t))
 

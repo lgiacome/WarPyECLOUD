@@ -21,7 +21,8 @@ dumpfile = folder+ '/cavity.%d.dump' %me
 
 restart(dumpfile)
 sim.reinit(laser_func, plots_crab)
-
 n_steps = 1000
-#sim.all_steps_no_ecloud(n_steps)
+sim.tot_nsteps = 1000
+sim.saver.extend_probe_vectors(n_steps)
+sim.all_steps_no_ecloud()
 
