@@ -376,16 +376,14 @@ class warp_pyecloud_sim:
     def all_steps_no_ecloud(self):
         if picmi.warp.me == 0:
             for i in tqdm(range(self.tot_nsteps)):
-                #breakpoint()
-                #sys.stdout = self.text_trap
+                sys.stdout = self.text_trap
                 picmi.warp.step(1)
-                #sys.stdout = self.original
+                sys.stdout = self.original
         else:
             for i in range(self.tot_nsteps):
-                #breakpoint()
-                #sys.stdout = self.text_trap
+                sys.stdout = self.text_trap
                 picmi.warp.step(1)
-                #sys.stdout = self.original
+                sys.stdout = self.original
 
 
     def init_uniform_density(self):
@@ -527,12 +525,5 @@ class warp_pyecloud_sim:
         self.solver.em3dfft_args['laser_func'] = self.laser_func
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
         self.original = sys.stdout
-#        for i, pp in enumerate(self.field_probes):
-#            def self_wrapped_probe_fun_i():
-#                self.saver.field_probe(i, pp)
-#                picmi.warp.installafterstep(self_wrapped_probe_fun_i)
-        breakpoint()
-
-#        picmi.warp.installafterstep(self.self_wrapped_custom_plot) 
 
 
