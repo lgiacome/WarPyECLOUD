@@ -21,9 +21,9 @@ enable_trap = True
 N_mp_max = 0
 init_num_elecs = 0
 
-nx = 100
-ny = 75
-nz = 100
+nx = 50
+ny = 50
+nz = 50
 
 # Compute sigmas
 nemittx = 2.5e-6
@@ -35,8 +35,8 @@ beam_gamma = 479.
 beam_beta = np.sqrt(1-1/(beam_gamma**2))
 sigmax = np.sqrt(beta_x*nemittx/(beam_gamma*beam_beta))
 sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
-print(sigmax)
 sigmat= 1.000000e-09/4.
+
 max_z = 0.3
 
 disp = 5e-3
@@ -45,7 +45,7 @@ chamber = CrabCavityWaveguide(-max_z, max_z, disp)
 n_bunches = 1 
 
 freq_t = 400e6
-phase_delay = np.pi/2
+phase_delay = 0
 r_time = 10*2.5e-9
 
 # Antenna parameters
@@ -68,9 +68,11 @@ def amplitude(t, Emax, r_time):
 def laser_func(y, x, t):
     w_t = 2*np.pi*freq_t
     width = laser_xmax - laser_xmin
+    r_time = 10*2.5e-9
     w_z = c_light*np.sqrt((w_t/c_light)**2 - (np.pi/width)**2)
+    source_z = 0
     if t<2*r_time:
-        return amplitude(t, laser_emax, r_time)*np.sin(-np.pi/width*(x+width/2))*(np.sin(w_t*t-phase_delay)*np.cos(w_z*laser_source_z) - np.cos(w_t*t-phase_delay)*np.sin(w_z*laser_source_z))
+        return amplitude(t, laser_emax, r_time)*np.sin(-np.pi/width*(x+width/2))*(np.sin(w_t*t-phase_delay)*np.cos(w_z*source_z) - np.cos(w_t*t-phase_delay)*np.sin(w_z*source_z))
     else:
         return 0
 
@@ -117,6 +119,11 @@ def plots_crab(self, l_force = 0):
     print('plotting something')
     pass
 
+def custom_time_prof(self):
+    if picmi.warp.top.time > self.t_offs: 
+        print('cane')
+    return 0
+
 field_probes = [[int(nx/2),int(ny/2),int(nz/2)]]
 
 kwargs = {'enable_trap': enable_trap,
@@ -145,10 +152,11 @@ kwargs = {'enable_trap': enable_trap,
     'sigmat': sigmat,
     'init_num_elecs': 0,
     'init_num_elecs_mp': 1,
-    'bunch_macro_particles': 0,
+    'bunch_macro_particles': 1,
+    'bunch_intensity': 0,
     'b_spac': 25e-9,
     'beam_gamma': 1,
-    't_offs': 3*sigmat+1e-10,
+    't_offs': 1000,
     'images_dir': 'images_transient',
     'chamber': chamber,
     'custom_plot': plots_crab,
@@ -163,9 +171,10 @@ kwargs = {'enable_trap': enable_trap,
     'laser_xmax': laser_xmax,
     'laser_ymin': laser_ymin,
     'laser_ymax': laser_ymax,
-    'tot_nsteps': 5000,
+    'tot_nsteps': 3690,
     'field_probes': field_probes,
-    'field_probes_dump_stride': 100
+    'field_probes_dump_stride': 100,
+    'custom_time_prof': custom_time_prof
 }
 
 sim = warp_pyecloud_sim(**kwargs)

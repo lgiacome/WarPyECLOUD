@@ -20,9 +20,12 @@ folder = base_folder + '/dumps'
 dumpfile = folder+ '/cavity.%d.dump' %me 
 
 restart(dumpfile)
-sim.reinit(laser_func, plots_crab)
-n_steps = 1000
-sim.tot_nsteps = 1000
+sim.t_offs = 5.1355E-08
+sim.n_bunches = 1
+sim.bunch_macro_particles = 1e4
+sim.reinit(laser_func, plots_crab,custom_time_prof = None)
+n_steps = 100
+sim.tot_nsteps = 100
 sim.saver.extend_probe_vectors(n_steps)
 sim.all_steps_no_ecloud()
 

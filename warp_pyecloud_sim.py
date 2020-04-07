@@ -1,7 +1,7 @@
 from perform_regeneration import perform_regeneration
 import numpy as np
 import numpy.random as random
-from warp import picmi
+from warp import picmi, em3d
 from warp import *
 from scipy.stats import gaussian_kde
 from warp.particles.Secondaries import Secondaries, top, warp, time, dump, restart
@@ -44,7 +44,7 @@ class warp_pyecloud_sim:
                  EM_method = 'Yee', cfl = 1.0, ecloud_sim = True,
                  folder_em_fields = None, after_step_fun_list = [], 
                  field_probes = [], field_probes_dump_stride = 100, 
-                 tot_nsteps = None): 
+                 tot_nsteps = None, custom_time_prof = None): 
 
         # Construct PyECLOUD secondary emission object
         sey_mod = seec.SEY_model_ECLOUD(Emax = Emax, del_max = del_max, R0 = R0,
@@ -103,6 +103,11 @@ class warp_pyecloud_sim:
         self.after_step_fun_list = after_step_fun_list
         self.field_probes = field_probes
         self.solver_type = solver_type
+        self.custom_time_prof = custom_time_prof
+        if custom_time_prof is None:
+            self.time_prof = self.gaussian_time_prof
+        else:
+            self.time_prof = self.self_wrapped_custom_time_prof
 
         if solver_type == 'ES':
             pw.top.dt = dt
@@ -130,7 +135,7 @@ class warp_pyecloud_sim:
         self.bunch_centroid_velocity = [0.,0., beam_gamma*picmi.constants.c]
 
         # Instantiate beam
-        electron_background_dist = self.init_uniform_density()
+        
         self.beam = picmi.Species(particle_type = 'proton',
                              particle_shape = 'linear',
                              name = 'beam',
@@ -194,7 +199,7 @@ class warp_pyecloud_sim:
                                           warp_laser_xmax = self.laser_xmax,
                                           warp_laser_ymin = self.laser_ymin,
                                           warp_laser_ymax = self.laser_ymax)
-                      
+
         # Setup simulation
         sim = picmi.Simulation(solver = self.solver, verbose = 1, cfl = self.cfl,
                                warp_initialize_solver_after_generate = 1)
@@ -202,8 +207,8 @@ class warp_pyecloud_sim:
 
         sim.conductors = chamber.conductors
 
-        sim.add_species(self.beam, layout = None,
-                        initialize_self_field = solver_type == 'EM')
+        #sim.add_species(self.beam, layout = None,
+        #                initialize_self_field = solver_type == 'EM')
 
         self.ecloud_layout = picmi.PseudoRandomLayout(
                                           n_macroparticles = self.init_num_elecs_mp,
@@ -257,6 +262,8 @@ class warp_pyecloud_sim:
                         pyecloud_nel_mp_ref = pyecloud_nel_mp_ref,
                         pyecloud_fact_clean = pyecloud_fact_clean,
                         pyecloud_fact_split = pyecloud_fact_split)
+
+        #self.sec=Secondaries(conductors = sim.conductors, l_usenew = 1)
 
         self.sec.add(incident_species = self.ecloud.wspecies,
                 emitted_species  = self.ecloud.wspecies,
@@ -385,21 +392,25 @@ class warp_pyecloud_sim:
                 picmi.warp.step(1)
                 sys.stdout = self.original
 
-
     def init_uniform_density(self):
         chamber = self.chamber
         lower_bound = chamber.lower_bound
         upper_bound = chamber.upper_bound
         init_num_elecs_mp = self.init_num_elecs_mp
-        x0 = random.uniform(lower_bound[0], upper_bound[0],
+        x0 = random.uniform(chamber.xmin, chamber.xmax,
                             init_num_elecs_mp)
-        y0 = random.uniform(lower_bound[1], upper_bound[1],
+        y0 = random.uniform(chamber.ymin, chamber.ymax,
                             init_num_elecs_mp)
-        z0 = random.uniform(lower_bound[2], upper_bound[2],
+        z0 = random.uniform(chamber.zmin, chamber.zmax,
                             init_num_elecs_mp)
         vx0 = np.zeros(init_num_elecs_mp)
         vy0 = np.zeros(init_num_elecs_mp)
         vz0 = np.zeros(init_num_elecs_mp)
+        if self.init_num_elecs_mp == 1:
+            x0 = np.zeros(init_num_elecs_mp)
+            y0 = np.zeros(init_num_elecs_mp)
+            z0 = np.zeros(init_num_elecs_mp)
+
 
         flag_out = chamber.is_outside(x0, y0, z0)
         Nout = np.sum(flag_out)
@@ -412,7 +423,6 @@ class warp_pyecloud_sim:
             Nout = np.sum(flag_out)
             
         w0 = float(self.init_num_elecs)/float(init_num_elecs_mp)         
-    
         self.b_pass = 0
 
         return picmi.ParticleListDistribution(x = x0, y = y0, z = z0, vx = vx0,
@@ -444,30 +454,33 @@ class warp_pyecloud_sim:
 
            
 
-    def time_prof(self, t):
+    def gaussian_time_prof(self):
+        t = picmi.warp.top.time
         val = 0
         for i in range(0,self.n_bunches):
             val += (self.bunch_macro_particles*1.
                    /np.sqrt(2*np.pi*self.sigmat**2)
                    *np.exp(-(t-i*self.b_spac-self.t_offs)**2
                    /(2*self.sigmat**2))*picmi.warp.top.dt)
+        print(val)
         return val
 
     def bunched_beam(self):
-        NP = int(np.round(self.time_prof(top.time)))
-        x = random.normal(self.bunch_centroid_position[0], 
-                          self.bunch_rms_size[0], NP)
-        y = random.normal(self.bunch_centroid_position[1], 
-                          self.bunch_rms_size[1], NP)
-        z = self.bunch_centroid_position[2]
-        vx = random.normal(self.bunch_centroid_velocity[0], 
-                           self.bunch_rms_velocity[0], NP)
-        vy = random.normal(self.bunch_centroid_velocity[1], 
-                           self.bunch_rms_velocity[1], NP)
-        vz = picmi.warp.clight*np.sqrt(1 - 1./(self.beam_gamma**2))
-        self.beam.wspecies.addparticles(x = x, y = y, z = z, vx = vx, vy = vy, 
-                                        vz = vz, gi = 1./self.beam_gamma,
-                                        w = self.bunch_w)
+        NP = int(np.round(self.time_prof()))
+        if NP > 0:
+            x = random.normal(self.bunch_centroid_position[0], 
+                              self.bunch_rms_size[0], NP)
+            y = random.normal(self.bunch_centroid_position[1], 
+                              self.bunch_rms_size[1], NP)
+            z = self.bunch_centroid_position[2]
+            vx = random.normal(self.bunch_centroid_velocity[0], 
+                               self.bunch_rms_velocity[0], NP)
+            vy = random.normal(self.bunch_centroid_velocity[1], 
+                               self.bunch_rms_velocity[1], NP)
+            vz = picmi.warp.clight*np.sqrt(1 - 1./(self.beam_gamma**2))
+            self.beam.wspecies.addparticles(x = x, y = y, z = z, vx = vx, vy = vy, 
+                                            vz = vz, gi = 1./self.beam_gamma,
+                                            w = self.bunch_w)
 
     def myplots(self, l_force=0):
         chamber = self.chamber
@@ -507,6 +520,8 @@ class warp_pyecloud_sim:
     def self_wrapped_custom_plot(self, l_force = 0):
         self.custom_plot(self, l_force = l_force)
 
+    def self_wrapped_custom_time_prof(self):
+       return self.custom_time_prof(self)
 
     def dump(self, filename):
         self.solver.solver.laser_func = None
@@ -515,12 +530,19 @@ class warp_pyecloud_sim:
         self.text_trap = None
         self.original = None        
         self.custom_plot = None
+        self.custom_time_prof = None
         #del self.chamber
         dump(filename)
 
-    def reinit(self, laser_func, custom_plot):
+    def reinit(self, laser_func, custom_plot, custom_time_prof = None):
         self.laser_func = laser_func
         self.custom_plot = custom_plot
+        self.custom_time_prof = custom_time_prof
+        if custom_time_prof is None:
+            self.time_prof = self.gaussian_time_prof
+        else:
+            self.time_prof = self.self_wrapped_custom_time_prof
+
         self.solver.solver.laser_func = self.laser_func
         self.solver.em3dfft_args['laser_func'] = self.laser_func
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
