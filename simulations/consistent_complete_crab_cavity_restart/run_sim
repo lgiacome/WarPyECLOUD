@@ -1,0 +1,1 @@
+bsub -B -N -R "rusage[mem=4096]" -o /cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/transient_crab_cavity/transient_sim.out -n 10 -W 1440 mpirun -np 10 python /cluster/home/glorenzo/sim_workspace_mpi_py3/WarPyECLOUD/simulations/transient_crab_cavity/transient_sim.py -p 1 1 10
