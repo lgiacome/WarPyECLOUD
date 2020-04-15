@@ -4,7 +4,7 @@ import numpy.random as random
 from warp import picmi, em3d
 from warp import *
 from scipy.stats import gaussian_kde
-from warp.particles.Secondaries import Secondaries, top, warp, time, dump, restart, clight
+from warp.particles.Secondaries import Secondaries, top, warp, time, clight
 import matplotlib.pyplot as plt
 from io import StringIO
 from scipy.constants import c as clight
@@ -13,6 +13,7 @@ import PyECLOUD.myfilemanager as mfm
 import os
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 from saver import Saver
+
 from h5py_manager import dict_of_arrays_and_scalar_from_h5
 import scipy.io as sio
 from tqdm import tqdm
@@ -524,28 +525,5 @@ class warp_pyecloud_sim:
     def self_wrapped_custom_time_prof(self):
        return self.custom_time_prof(self)
 
-    def dump(self, filename):
-        self.solver.solver.laser_func = None
-        del self.solver.em3dfft_args['laser_func']
-        self.laser_func = None
-        self.text_trap = None
-        self.original = None        
-        self.custom_plot = None
-        self.custom_time_prof = None
-        dump(filename)
-
-    def reinit(self, laser_func, custom_plot, custom_time_prof = None):
-        self.laser_func = laser_func
-        self.custom_plot = custom_plot
-        self.custom_time_prof = custom_time_prof
-        if custom_time_prof is None:
-            self.time_prof = self.gaussian_time_prof
-        else:
-            self.time_prof = self.self_wrapped_custom_time_prof
-
-        self.solver.solver.laser_func = self.laser_func
-        self.solver.em3dfft_args['laser_func'] = self.laser_func
-        self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
-        self.original = sys.stdout
 
 
