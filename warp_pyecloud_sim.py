@@ -1,142 +1,115 @@
+# Self imports
 from perform_regeneration import perform_regeneration
+from saver import Saver
+from h5py_manager import dict_of_arrays_and_scalar_from_h5
+# PyECLOUD imports
+import PyECLOUD.myfilemanager as mfm
+import PyECLOUD.sec_emission_model_ECLOUD as seec
+# Warp imports
+from warp import picmi, top, time
+from warp.particles.Secondaries import Secondaries
+# Numpy/Matplotlib imports
 import numpy as np
 import numpy.random as random
-from warp import picmi, em3d
-from warp import *
-from scipy.stats import gaussian_kde
-from warp.particles.Secondaries import Secondaries, top, warp, time, clight
 import matplotlib.pyplot as plt
+# System imports
 from io import StringIO
-from scipy.constants import c as clight
 import sys
-import PyECLOUD.myfilemanager as mfm
 import os
-import PyECLOUD.sec_emission_model_ECLOUD as seec
-from saver import Saver
-
-from h5py_manager import dict_of_arrays_and_scalar_from_h5
-import scipy.io as sio
+# Nice outputs
 from tqdm import tqdm
 
-class warp_pyecloud_sim:
+class warp_pyecloud_sim(object):
+    __inputs__ = {'nx': None, 'ny': None, 'nz': None, 'solver_type': 'ES',
+                  'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
+                  'sigmax': None, 'sigmay': None, 'sigmat': None,
+                  'bunch_intensity': None, 'init_num_elecs': None,
+                  'init_num_elecs_mp': 0, 'N_subcycle': None,
+                  'pyecloud_nel_mp_ref': None, 'dt': None,
+                  'pyecloud_fact_clean': None, 'pyecloud_fact_split': None,
+                  'enable_trap': True, 'Emax': None, 'del_max': None,
+                  'R0': None, 'E_th': None, 'sigmafit': None, 'mufit': None,
+                  'secondary_angle_distribution': None, 'N_mp_max': None,
+                  'N_mp_target': None, 'flag_checkpointing': False,
+                  'checkpoints': None, 'flag_output': False,
+                  'bunch_macro_particles': 0, 't_offs': None,
+                  'output_filename': 'output.h5',
+                  'flag_relativ_tracking': True, 'nbins': 100, 'radius': None,
+                  'stride_imgs': 10, 'stride_output': 1000, 'chamber': False,
+                  'lattice_elem': None, 'temps_filename': 'temp_mps_info.h5',
+                  'custom_plot': None, 'images_dir': None, 'laser_func': None,
+                  'laser_source_z': None, 'laser_polangle': None,
+                  'laser_emax': None, 'laser_xmin': None, 'laser_xmax': None,
+                  'laser_ymin': None, 'laser_ymax': None,
+                  'init_em_fields': False, 'file_em_fields': None,
+                  'em_scale_fac': 1, 'EM_method': 'Yee', 'cfl': 1.0,
+                  'ecloud_sim': True, 'folder_em_fields': None,
+                  'after_step_fun_list': [], 'field_probes': [],
+                  'field_probes_dump_stride': 100, 'tot_nsteps': None,
+                  'custom_time_prof': None, 't_inject_elec': 0
+    }
     
-    def __init__(self, nx = None, ny = None, nz =None, 
-                 solver_type = 'ES', n_bunches = None, b_spac = None, 
-                 beam_gamma = None, sigmax = None, sigmay = None, 
-                 sigmat = None, bunch_intensity = None, init_num_elecs = None,
-                 init_num_elecs_mp = 0, By = None, N_subcycle = None,
-                 pyecloud_nel_mp_ref = None, dt = None, 
-                 pyecloud_fact_clean = None, pyecloud_fact_split = None,
-                 enable_trap = True, Emax = None, del_max = None, R0 = None, 
-                 E_th = None, sigmafit = None, mufit = None,
-                 secondary_angle_distribution = None, N_mp_max = None,
-                 N_mp_target = None, flag_checkpointing = False, 
-                 checkpoints = None, flag_output = False, 
-                 bunch_macro_particles = 0, t_offs = None, width = None, 
-                 height = None, output_filename = 'output.h5', 
-                 flag_relativ_tracking = True, nbins = 100, radius = None,
-                 ghost = None,ghost_z = None, stride_imgs = 10, 
-                 stride_output = 1000,chamber = False, lattice_elem = None, 
-                 temps_filename = 'temp_mps_info.h5', custom_plot = None,
-                 images_dir = None, laser_func = None, laser_source_z = None, 
-                 laser_polangle = None, laser_emax = None, laser_xmin = None,
-                 laser_xmax = None, laser_ymin = None, laser_ymax = None, 
-                 init_em_fields = False, file_em_fields = None, em_scale_fac = 1,
-                 EM_method = 'Yee', cfl = 1.0, ecloud_sim = True,
-                 folder_em_fields = None, after_step_fun_list = [], 
-                 field_probes = [], field_probes_dump_stride = 100, 
-                 tot_nsteps = None, custom_time_prof = None, 
-                 t_inject_elec = 0): 
+    ###### CHAMBER SHOULD NOT BE SELF...
+    
+    def processdefaultsfromdict(self,dict,kw):
+        for name,defvalue in dict.items():
+            if name not in self.__dict__:
+                #self.__dict__[name] = kw.pop(name,getattr(top,name)) # Python2.3
+                self.__dict__[name] = kw.get(name,defvalue)
+            if name in kw: del kw[name]
+    
+    def __init__(self, **kw):
+        self.processdefaultsfromdict(self.__inputs__, kw)
 
         # Construct PyECLOUD secondary emission object
-        self.sey_mod = seec.SEY_model_ECLOUD(Emax = Emax, del_max = del_max,
-                                             R0 = R0, E_th = E_th,
-                                             sigmafit = sigmafit,
-                                             mufit = mufit,
+        self.sey_mod = seec.SEY_model_ECLOUD(Emax = self.Emax,
+                                             del_max = self.del_max,
+                                             R0 = self.R0, E_th = self.E_th,
+                                             sigmafit = self.sigmafit,
+                                             mufit = self.mufit,
                                        secondary_angle_distribution='cosine_3D')
 
-        self.nbins = nbins
-        self.N_mp_target = N_mp_target
-        self.N_mp_max = N_mp_max
-        self.nx = nx
-        self.ny = ny
-        self.nz = nz
-        self.flag_checkpointing = flag_checkpointing
-        self.checkpoints = checkpoints 
-        self.flag_output = flag_output
-        self.output_filename = output_filename 
-        self.stride_imgs = stride_imgs
-        self.stride_output = stride_output
-        self.beam_gamma = beam_gamma
         self.beam_beta = np.sqrt(1-1/(self.beam_gamma**2))
-        self.chamber = chamber
-        self.init_num_elecs_mp = init_num_elecs_mp
-        self.init_num_elecs = init_num_elecs
-        self.n_bunches = n_bunches
-        if n_bunches is not None and tot_nsteps is not None:
+
+        if self.n_bunches is not None and self.tot_nsteps is not None:
             print("""WARNING: if both n_bunches and tot_nsteps are specified 
                    tot_nsteps is going to be ignored and the number of steps is 
-                   going to be determined basing on n_bunches and dt""")        
-        self.bunch_macro_particles = bunch_macro_particles
-        self.sigmat = sigmat
-        self.b_spac = b_spac
-        self.t_offs = t_offs
-        self.temps_filename = temps_filename
-        self.custom_plot = custom_plot
-        self.images_dir = images_dir
-        if not os.path.exists(images_dir) and picmi.warp.me==0:
-            os.makedirs(images_dir)
-        self.lattice_elem = lattice_elem
-        self.laser_func = laser_func
-        self.laser_source_z = laser_source_z
-        self.laser_polangle = laser_polangle
-        self.laser_emax = laser_emax
-        self.laser_xmin = laser_xmin
-        self.laser_xmax = laser_xmax
-        self.laser_ymin = laser_ymin
-        self.laser_ymax = laser_ymax
-        self.cfl = cfl
+                   going to be determined basing on n_bunches and dt""")
+                   
+        if not os.path.exists(self.images_dir) and picmi.warp.me==0:
+            os.makedirs(self.images_dir)
+
         # Just some shortcuts
         pw = picmi.warp
         step = pw.step
-        self.init_em_fields = init_em_fields
-        self.folder_em_fields = folder_em_fields
-        self.file_em_fields = file_em_fields
-        self.em_scale_fac = em_scale_fac
-        self.enable_trap = enable_trap 
-        self.after_step_fun_list = after_step_fun_list
-        self.field_probes = field_probes
-        self.solver_type = solver_type
-        self.custom_time_prof = custom_time_prof
-        if custom_time_prof is None:
+
+        if self.custom_time_prof is None:
             self.time_prof = self.gaussian_time_prof
         else:
             self.time_prof = self.self_wrapped_custom_time_prof
-        self.t_inject_elec = t_inject_elec
 
-        if solver_type == 'ES':
+        if self.solver_type == 'ES':
             pw.top.dt = dt
-
-        elif solver_type == 'EM':
-            if dt is not None:
+        elif self.solver_type == 'EM':
+            if self.dt is not None:
                 print('WARNING: dt is going to be ignored for the EM solver')
-            self.EM_method = EM_method
+            #self.EM_method = EM_method
             
-        if flag_relativ_tracking:
+        if self.flag_relativ_tracking:
             pw.top.lrelativ = pw.true
         else:
             pw.top.lrelativ = pw.false
 
         # Beam parameters
-        self.sigmaz = sigmat*picmi.clight
-        if bunch_macro_particles > 0:
-            self.bunch_w = bunch_intensity/bunch_macro_particles
+        self.sigmaz = self.sigmat*picmi.clight
+        if self.bunch_macro_particles > 0:
+            self.bunch_w = self.bunch_intensity/self.bunch_macro_particles
         else:
             self.bunch_w = 0
 
-        self.bunch_rms_size = [sigmax, sigmay, self.sigmaz]
+        self.bunch_rms_size = [self.sigmax, self.sigmay, self.sigmaz]
         self.bunch_rms_velocity = [0., 0., 0.]
-        self.bunch_centroid_position = [0, 0, chamber.zmin + 1e-4]
+        self.bunch_centroid_position = [0, 0, self.chamber.zmin + 1e-4]
         self.bunch_centroid_velocity = [0.,0., self.beam_beta*picmi.constants.c]
 
         # Instantiate beam
@@ -159,16 +132,16 @@ class warp_pyecloud_sim:
 
     
         # Setup grid and boundary conditions
-        if solver_type == 'ES':
+        if self.solver_type == 'ES':
             lower_bc = ['dirichlet', 'dirichlet', 'dirichlet']
             upper_bc = ['dirichlet', 'dirichlet', 'dirichlet']
-        if solver_type == 'EM':
+        if self.solver_type == 'EM':
             lower_bc = ['open', 'open', 'open']
             upper_bc = ['open', 'open', 'open']
 
         number_of_cells = [self.nx, self.ny, self.nz]
-        lower_bound = [chamber.xmin, chamber.ymin, chamber.zmin]
-        upper_bound = [chamber.xmax, chamber.ymax, chamber.zmax]
+        lower_bound = [self.chamber.xmin, self.chamber.ymin, self.chamber.zmin]
+        upper_bound = [self.chamber.xmax, self.chamber.ymax, self.chamber.zmax]
         
         grid = picmi.Cartesian3DGrid(number_of_cells = number_of_cells,
                                      lower_bound = lower_bound,
@@ -210,7 +183,7 @@ class warp_pyecloud_sim:
                                cfl = self.cfl,
                                warp_initialize_solver_after_generate = 1)
 
-        sim.conductors = chamber.conductors
+        sim.conductors = self.chamber.conductors
 
         sim.add_species(self.beam, layout = None,
                         initialize_self_field = False)
@@ -227,19 +200,17 @@ class warp_pyecloud_sim:
 
         if self.init_num_elecs_mp > 0:
             picmi.warp.installuserinjection(self.init_uniform_density)
-
         sim.step(1)
-        if tot_nsteps is not None:
-            self.tot_nsteps = tot_nsteps
-        elif n_bunches is not None:
-            self.tot_nsteps = int(np.round(b_spac*(n_bunches)/top.dt))
-        else:
+        
+        if self.tot_nsteps is None and self.n_bunches is not None:
+            self.tot_nsteps = int(np.round(b_spac*(self.n_bunches)/top.dt))
+        elif self.tot_nsteps is None and self.n_bunches is None:
             raise Exception('One between n_bunches and tot_nsteps has to be specified')
 
-        self.saver = Saver(flag_output, flag_checkpointing, 
-                           self.tot_nsteps, n_bunches, nbins, self.solver,
-                           temps_filename = temps_filename,
-                           output_filename = output_filename)
+        self.saver = Saver(self.flag_output, self.flag_checkpointing,
+                           self.tot_nsteps, self.n_bunches, self.nbins,
+                           self.solver, temps_filename = self.temps_filename,
+                           output_filename = self.output_filename)
  
         self.solver.solver.installconductor(sim.conductors, 
                                             dfill = picmi.warp.largepos)
@@ -266,19 +237,19 @@ class warp_pyecloud_sim:
 
         self.sec=Secondaries(conductors = sim.conductors, l_usenew = 1,
                              pyecloud_secemi_object = self.sey_mod,
-                             pyecloud_nel_mp_ref = pyecloud_nel_mp_ref,
-                             pyecloud_fact_clean = pyecloud_fact_clean,
-                             pyecloud_fact_split = pyecloud_fact_split)
+                             pyecloud_nel_mp_ref = self.pyecloud_nel_mp_ref,
+                             pyecloud_fact_clean = self.pyecloud_fact_clean,
+                             pyecloud_fact_split = self.pyecloud_fact_split)
         #self.sec=Secondaries(conductors = sim.conductors, l_usenew = 1)
 
         self.sec.add(incident_species = self.ecloud.wspecies,
                      emitted_species = self.ecloud.wspecies,
                      conductor = sim.conductors)
 
-        if N_subcycle is not None:
-            Subcycle(N_subcycle)
+        if self.N_subcycle is not None:
+            Subcycle(self.N_subcycle)
         
-        if custom_plot is not None:
+        if self.custom_plot is not None:
             plot_func = self.self_wrapped_custom_plot
         else:
             plot_func = self.myplots
@@ -289,7 +260,7 @@ class warp_pyecloud_sim:
         if len(self.field_probes)>0:
             self.saver.init_field_probes(np.shape(self.field_probes)[0], 
                                          self.tot_nsteps, 
-                                         field_probes_dump_stride)
+                                         self.field_probes_dump_stride)
 
         for i, pos_probe in enumerate(self.field_probes):
             self.pos_probe = pos_probe
@@ -300,7 +271,7 @@ class warp_pyecloud_sim:
         for fun in self.after_step_fun_list:
             pw.installafterstep(fun)
 
-        self.ntsteps_p_bunch = int(np.round(b_spac/top.dt))
+        self.ntsteps_p_bunch = int(np.round(self.b_spac/top.dt))
 
         # aux variables
         self.perc = 10
