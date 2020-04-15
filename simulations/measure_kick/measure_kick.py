@@ -14,7 +14,7 @@ from chamber import CrabCavity
 from lattice_elements import CrabFields
 import matplotlib.pyplot as plt
 
-enable_trap = True
+enable_trap = False
 
 #Number of mesh nodes per direction
 nx = 5
@@ -47,12 +47,13 @@ E_field_max = 20e6
 
 # Set up the RF field
 t_offs = 3*sigmat+1e-10
-lattice_elem = CrabFields(min_z, max_rescale = E_field_max, efield_path = efield_path,
-                          hfield_path = hfield_path, chamber = chamber, t_offs = t_offs)
-
+#lattice_elem = CrabFields(min_z, max_rescale = E_field_max, efield_path = efield_path,
+#                          hfield_path = hfield_path, chamber = chamber, t_offs = t_offs)
+lattice_elem = None
 n_bunches = 1
 
 # Def plots
+'''
 def plot_kick(self, l_force=0):
 
     fontsz = 16
@@ -82,7 +83,7 @@ def plot_kick(self, l_force=0):
     filename = self.images_dir + '/kick_' + repr(int(self.n_step)).zfill(4) + '.png'
     plt.savefig(filename)
     plt.close()
-
+'''
 kwargs = {'enable_trap': enable_trap,
     'solver_type': 'ES',
 	'nx': nx,
@@ -98,7 +99,7 @@ kwargs = {'enable_trap': enable_trap,
     'init_num_elecs': 0,
     'init_num_elecs_mp': 0, 
     'pyecloud_nel_mp_ref': 0,
-	'dt': 25e-12,
+	'dt': 25e-10,
     'pyecloud_fact_clean': 1e-6,
 	'pyecloud_fact_split': 1.5,
     'Emax': 332., 
@@ -119,10 +120,14 @@ kwargs = {'enable_trap': enable_trap,
     'flag_relativ_tracking': True,
     'lattice_elem': lattice_elem,
     'chamber': chamber,
-    'custom_plot': plot_kick,
+#    'custom_plot': plot_kick,
     'stride_imgs': 10
 }
 
 sim = warp_pyecloud_sim(**kwargs)
 
 sim.all_steps()
+sim.text_trap = None
+sim.original = None
+
+dump('try.dump')

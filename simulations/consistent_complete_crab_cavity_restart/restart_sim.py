@@ -76,6 +76,49 @@ def plot_dens(self, l_force=0):
         plt.savefig(figname)
         del fig
         plt.close('all')
+        #print(np.max(self.solver.solver.fields.Ey))
+
+def plots_crab(self, l_force = 0):
+    #fontsz = 16
+    #plt.rcParams['axes.labelsize'] = fontsz
+    #plt.rcParams['axes.titlesize'] = fontsz
+    #plt.rcParams['xtick.labelsize'] = fontsz
+    #plt.rcParams['ytick.labelsize'] = fontsz
+    #plt.rcParams['legend.fontsize'] = fontsz
+    #plt.rcParams['legend.title_fontsize'] = fontsz
+
+    chamber = self.chamber
+    if self.laser_source_z is None: here_laser_source_z = chamber.zmin + 0.5*(-chamber.l_main_z/2-chamber.zmin)
+    else: here_laser_source_z = self.laser_source_z
+    em = self.solver.solver
+    k_antenna = int((here_laser_source_z - chamber.zmin)/em.dz)
+    j_mid_waveguide = int((chamber.ycen6 - chamber.ymin)/em.dy)
+
+    flist = ['Ex','Ey','Ez','Bx','By','Bz']
+    flist = ['Jy']
+    pw = picmi.warp
+    if pw.top.it%10==0 or l_force:
+        #fig = plt.figure( figsize=(7,7))
+        for ffstr in flist:
+            if ffstr == 'Ex': ff = em.gatherex()
+            if ffstr == 'Ey':
+                ff = em.gatherey()
+                maxe =35e6*self.em_scale_fac #np.max(ey[:,:,:])
+                mine = -35e6*self.em_scale_fac #np.min(ey[:,:,:])
+            if ffstr == 'Ez': ff = em.gatherez()
+            if ffstr == 'Bx': ff = em.gatherbx()
+            if ffstr == 'By': ff = em.gatherby()
+            if ffstr == 'Bz': ff = em.gatherbz()
+            if ffstr == 'elecs':
+                ff = self.ecloud.wspecies.get_density()
+                maxe = 5e9 #np.max(ey[:,:,:])
+                mine = 0 #np.min(ey[:,:,:])
+            if ffstr == 'Jy': 
+                ff = em.gatherjy()
+                maxe = np.max(ff[:,:,:])
+                mine = np.min(ff[:,:,:])
+            if me==0:
+                plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber)
 
 def noplot(self, l_force = 0):
     pass
@@ -83,8 +126,11 @@ def noplot(self, l_force = 0):
 restart(dumpfile)
 sim.bunch_profile = np.zeros(10000)
 sim.enable_trap = False
-sim.reinit(laser_func, plot_dens, custom_time_prof = my_gaussian_time_prof)
-sim.tot_nsteps = 27
+sim.reinit(laser_func, plot_dens, custom_time_prof = None)# = my_gaussian_time_prof)
+sim.tot_nsteps = 3600
+sim.saver.tot_nsteps = 3600
+sim.t_inject_elec = 5.1e-8
+sim.n_bunches = 1
 sim.saver.extend_probe_vectors(sim.tot_nsteps)
 sim.all_steps_no_ecloud()
 

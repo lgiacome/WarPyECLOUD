@@ -18,7 +18,7 @@ import mpi4py
 
 enable_trap = True
 
-N_mp_max = 0
+N_mp_max = 1
 init_num_elecs = 0
 
 nx = 50
@@ -77,7 +77,7 @@ def laser_func(y, x, t):
         return 0
 
 def plot_kick(self, l_force=0):
-    if self.n_step > 3500:
+    if picmi.warp.top.it > 3500:
         fontsz = 16
         plt.rcParams['axes.labelsize'] = fontsz
         plt.rcParams['axes.titlesize'] = fontsz
@@ -122,9 +122,9 @@ kwargs = {'enable_trap': enable_trap,
     'sigmafit': 1.0828, 
     'mufit': 1.6636,
     'secondary_angle_distribution': 'cosine_3D', 
-    'pyecloud_nel_mp_ref': 0,
-    'pyecloud_fact_clean': 0,
-    'pyecloud_fact_split': 0,
+    'pyecloud_nel_mp_ref': init_num_elecs/(0.7*N_mp_max),
+    'pyecloud_fact_clean': 1e-6,
+    'pyecloud_fact_split': 1.5,
     'N_mp_max': N_mp_max,
     'N_mp_target': N_mp_max/3,
 	'flag_checkpointing': True,
@@ -132,18 +132,17 @@ kwargs = {'enable_trap': enable_trap,
 	'checkpoints': np.linspace(1, n_bunches, n_bunches),
     'temps_filename': 'complete_temp.h5',
     'flag_output': True,
-    'bunch_macro_particles': 1e7,
+    'bunch_macro_particles': 1e5,
     'bunch_intensity': 1.1e11,
     'sigmat': sigmat,
     'init_num_elecs': 0,
-    'init_num_elecs_mp': 1,
-    'bunch_macro_particles': 1e3,
+    'init_num_elecs_mp': 0,
     'b_spac': 25e-9,
     'beam_gamma': beam_gamma,
     'sigmax': sigmax,
     'sigmay': sigmay,
     'sigmat': sigmat, 
-    't_offs': 1000,
+    't_offs': 1000, #5.1355E-08,
     'images_dir': 'images_kick',
     'chamber': chamber,
     'custom_plot': plot_kick,

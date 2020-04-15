@@ -39,7 +39,7 @@ sigmat= 1.000000e-09/4.
 
 max_z = 0.3
 
-disp = 5e-3
+disp = 2e-3
 chamber = CrabCavityWaveguide(-max_z, max_z, disp)
 
 n_bunches = 1 
@@ -70,11 +70,12 @@ def laser_func(y, x, t):
     width = laser_xmax - laser_xmin
     r_time = 10*2.5e-9
     w_z = c_light*np.sqrt((w_t/c_light)**2 - (np.pi/width)**2)
-    source_z = 0
+    source_z = laser_source_z
     if t<2*r_time:
         return amplitude(t, laser_emax, r_time)*np.sin(-np.pi/width*(x+width/2))*(np.sin(w_t*t-phase_delay)*np.cos(w_z*source_z) - np.cos(w_t*t-phase_delay)*np.sin(w_z*source_z))
     else:
         return 0
+
 
 def plot_kick(self, l_force=0):
     if self.n_step > 3500:
@@ -119,7 +120,8 @@ kwargs = {'enable_trap': enable_trap,
     'b_spac': 25e-9,
     'sigmax': sigmax,
     'sigmay': sigmay,
-    'sigmat': sigmat,    'beam_gamma': beam_gamma,
+    'sigmat': sigmat,    
+    'beam_gamma': beam_gamma,
     'bunch_intensity': 1.1e11,
     'init_num_elecs': init_num_elecs,
     'init_num_elecs_mp': int(0.7*N_mp_max),
@@ -139,8 +141,7 @@ kwargs = {'enable_trap': enable_trap,
 	'checkpoints': np.linspace(1, n_bunches, n_bunches),
     'temps_filename': 'complete_temp.h5',
     'flag_output': True,
-    'sigmat': sigmat,
-    'bunch_macro_particles': 1e5,
+    'bunch_macro_particles': 10**5,
     't_offs': 5.1355E-08,
     'images_dir': 'images_kick',
     'chamber': chamber,
@@ -159,7 +160,7 @@ kwargs = {'enable_trap': enable_trap,
     'tot_nsteps': 3500,
     'field_probes': field_probes,
     'field_probes_dump_stride': 100,
-    't_inject_elec': 4.9e-8,
+    't_inject_elec': 5.1e-8,
 }
 
 sim = warp_pyecloud_sim(**kwargs)

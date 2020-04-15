@@ -24,6 +24,7 @@ dumpfile = folder+ '/cavity.%d.dump' %me
 def my_gaussian_time_prof(self):
     t = picmi.warp.top.time
     val = 0
+    self.t_offs = 5.3e-8-2.5e-9/4+2.6685127615852166e-10 - 3.335640951981521e-11
     for i in range(0,self.n_bunches):
         val += (self.bunch_macro_particles*1.
                /np.sqrt(2*np.pi*self.sigmat**2)
@@ -75,16 +76,47 @@ def plot_bunch(self, l_force=0):
         plt.savefig(figname)
         plt.close('all')
 
+
+def plot_kick_here(self, l_force=0):
+    if picmi.warp.top.it > 3500:
+        fontsz = 16
+        plt.rcParams['axes.labelsize'] = fontsz
+        plt.rcParams['axes.titlesize'] = fontsz
+        plt.rcParams['xtick.labelsize'] = fontsz
+        plt.rcParams['ytick.labelsize'] = fontsz
+        plt.rcParams['legend.fontsize'] = fontsz
+        plt.rcParams['legend.title_fontsize'] = fontsz
+
+        mass = 1.6726e-27
+        if self.beam.wspecies.getn()>0:
+            pz = mass*self.beam.wspecies.getuz()
+            E_beam = np.sqrt((pz*picmi.clight)**2 + (mass*picmi.clight**2)**2)
+            yp = self.beam.wspecies.getyp() #np.divide(self.beam.wspecies.getuy(), self.beam.wspecies.getuz())
+            Vt = E_beam*np.tan(yp)/picmi.echarge
+            plt.figure(figsize=(8,6))
+            plt.plot(self.beam.wspecies.getz()-np.mean(self.beam.wspecies.getz()), Vt, 'x')
+            plt.plot(np.zeros(100), np.linspace(-1e6, 1e6,100),'r--')
+            plt.plot(np.linspace(-0.05,0.05,100), np.zeros(100), 'r--')
+        #    plt.plot(np.linspace(-0.2,0.2,100), 3.96e6*np.ones(100), 'g--')
+        #    plt.plot(np.linspace(-0.2,0.2,100), -3.96e6*np.ones(100), 'g--')
+        #    plt.plot(np.linspace(-0.2,0.2,100), 2.36e6*np.ones(100), 'm--')
+        #    plt.plot(np.linspace(-0.2,0.2,100), -2.36e6*np.ones(100), 'm--')
+            plt.xlabel('s  [m]')
+            plt.ticklabel_format(style = 'sci', axis = 'y', scilimits=(0,0))
+            plt.ylabel('Deflecting Voltage  [V]')
+            filename = 'images_kick/kick_' + repr(int(self.n_step)).zfill(4) + '.png'
+            plt.savefig(filename)
+            plt.close('all')
+
 def noplot(self, l_force = 0):
-    pass
+    breakpoint()
 
 restart(dumpfile)
 sim.bunch_profile = np.zeros(10000)
-sim.t_offs = 5.1355E-08
-sim.n_bunches = 1
-sim.bunch_macro_particles = 1e4
-sim.reinit(laser_func, noplot ,custom_time_prof = my_gaussian_time_prof)
-sim.tot_nsteps = 400
+sim.t_offs = 5.3e-8 #5.1355E-08
+#sim.enable_trap = False
+sim.reinit(laser_func, plot_kick_here ,custom_time_prof = my_gaussian_time_prof)
+sim.tot_nsteps = 1000
 sim.saver.extend_probe_vectors(sim.tot_nsteps)
-#sim.all_steps_no_ecloud()
+sim.all_steps_no_ecloud()
 

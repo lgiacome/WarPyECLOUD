@@ -40,13 +40,13 @@ max_z = 0.3
 
 # Paths for the fields
 fields_folder = str(Path(os.getcwd()).parent.parent)
-efield_path = fields_folder + '/efield.txt'
-hfield_path = fields_folder + '/hfield.txt'
+efield_path = fields_folder + '/efield_squared.txt'
+hfield_path = fields_folder + '/hfield_squared.txt'
 
 chamber = CrabCavity(-max_z, max_z)
 E_field_max = 5e6 #57
 lattice_elem = CrabFields(-max_z, max_rescale = E_field_max, efield_path = efield_path, 
-                          hfield_path = hfield_path)
+                          hfield_path = hfield_path, chamber=chamber, t_offs = 3*sigmat+1e-10)
 
 n_bunches = 1 
 
@@ -178,7 +178,7 @@ def plots_crab(self, l_force = 0):
 
 
 kwargs = {'enable_trap': enable_trap,
-	'z_length': 1.,
+    'solver_type': 'EM',
 	'nx': nx,
 	'ny': ny, 
 	'nz': nz,
