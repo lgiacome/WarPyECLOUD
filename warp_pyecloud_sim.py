@@ -6,7 +6,7 @@ from h5py_manager import dict_of_arrays_and_scalar_from_h5
 import PyECLOUD.myfilemanager as mfm
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 # Warp imports
-from warp import picmi, top, time
+from warp import picmi, top, time, ParticleScraper
 from warp.particles.Secondaries import Secondaries
 # Numpy/Matplotlib imports
 import numpy as np
@@ -20,47 +20,70 @@ import os
 from tqdm import tqdm
 
 class warp_pyecloud_sim(object):
-    __inputs__ = {'nx': None, 'ny': None, 'nz': None, 'solver_type': 'ES',
-                  'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
-                  'sigmax': None, 'sigmay': None, 'sigmat': None,
-                  'bunch_intensity': None, 'init_num_elecs': None,
-                  'init_num_elecs_mp': 0, 'N_subcycle': None,
-                  'pyecloud_nel_mp_ref': None, 'dt': None,
-                  'pyecloud_fact_clean': None, 'pyecloud_fact_split': None,
-                  'enable_trap': True, 'Emax': None, 'del_max': None,
-                  'R0': None, 'E_th': None, 'sigmafit': None, 'mufit': None,
-                  'secondary_angle_distribution': None, 'N_mp_max': None,
-                  'N_mp_target': None, 'flag_checkpointing': False,
-                  'checkpoints': None, 'flag_output': False,
-                  'bunch_macro_particles': 0, 't_offs': None,
-                  'output_filename': 'output.h5',
-                  'flag_relativ_tracking': True, 'nbins': 100, 'radius': None,
-                  'stride_imgs': 10, 'stride_output': 1000, 'chamber': False,
-                  'lattice_elem': None, 'temps_filename': 'temp_mps_info.h5',
-                  'custom_plot': None, 'images_dir': None, 'laser_func': None,
-                  'laser_source_z': None, 'laser_polangle': None,
-                  'laser_emax': None, 'laser_xmin': None, 'laser_xmax': None,
-                  'laser_ymin': None, 'laser_ymax': None,
-                  'init_em_fields': False, 'file_em_fields': None,
-                  'em_scale_fac': 1, 'EM_method': 'Yee', 'cfl': 1.0,
-                  'ecloud_sim': True, 'folder_em_fields': None,
-                  'after_step_fun_list': [], 'field_probes': [],
-                  'field_probes_dump_stride': 100, 'tot_nsteps': None,
-                  'custom_time_prof': None, 't_inject_elec': 0
+    __fieldsolver_inputs__ = {'nx': None, 'ny': None, 'nz': None,
+                              'solver_type': 'ES', 'N_subcycle': None,
+                              'EM_method': 'Yee', 'cfl': 1.0,  'dt': None
+    }
+        
+    __beam_inputs__ = {'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
+                       'sigmax': None, 'sigmay': None, 'sigmat': None,
+                       'bunch_intensity': None, 't_offs': None,
+                       'bunch_macro_particles': 0, 'custom_time_prof': None}
+
+    __ecloud_inputs__ = {'init_num_elecs': None, 'init_num_elecs_mp': 0,
+                         'pyecloud_nel_mp_ref': None,
+                         'pyecloud_fact_clean': None,
+                         'pyecloud_fact_split': None,
+                         'Emax': None, 'del_max': None,
+                         'R0': None, 'E_th': None, 'sigmafit': None,
+                         'mufit': None, 'secondary_angle_distribution': None,
+                         'N_mp_max': None, 'N_mp_target': None,
+                         't_inject_elec': 0
+    }
+    
+    __antenna_inputs__ = {'laser_source_z': None, 'laser_polangle': None,
+                         'laser_emax': None, 'laser_xmin': None,
+                         'laser_xmax': None, 'laser_ymin': None,
+                         'laser_ymax': None, 'laser_func': None
+    }
+
+    __saving_inputs__ = {'flag_checkpointing': False, 'checkpoints': None,
+                       'flag_output': False, 'output_filename': 'output.h5',
+                       'nbins': 100, 'radius': None, 'stride_imgs': 10,
+                       'stride_output': 1000,
+                       'temps_filename': 'temp_mps_info.h5',
+                       'custom_plot': None, 'images_dir': None,
+                       'field_probes': [], 'field_probes_dump_stride': 100
+    }
+    __simulation_inputs__ = {'enable_trap': True,
+                             'flag_relativ_tracking': True, 'chamber': False,
+                             'lattice_elem': None, 'after_step_fun_list': [],
+                             'tot_nsteps': None
     }
     
     ###### CHAMBER SHOULD NOT BE SELF...
-    
-    def processdefaultsfromdict(self,dict,kw):
+
+    def defaultsfromdict(self,dict,kw):
         for name,defvalue in dict.items():
             if name not in self.__dict__:
                 #self.__dict__[name] = kw.pop(name,getattr(top,name)) # Python2.3
                 self.__dict__[name] = kw.get(name,defvalue)
             if name in kw: del kw[name]
+        if len(kw.keys())!=0: breakpoint()
     
-    def __init__(self, **kw):
-        self.processdefaultsfromdict(self.__inputs__, kw)
-
+    def __init__(self, fieldsolver_inputs = None,
+                 beam_inputs = None, ecloud_inputs = None,
+                 antenna_inputs = None,
+                 saving_inputs = None,
+                 simulation_inputs = None):
+                 
+        self.defaultsfromdict(self.__fieldsolver_inputs__, fieldsolver_inputs)
+        self.defaultsfromdict(self.__beam_inputs__, beam_inputs)
+        self.defaultsfromdict(self.__ecloud_inputs__, ecloud_inputs)
+        self.defaultsfromdict(self.__antenna_inputs__, antenna_inputs)
+        self.defaultsfromdict(self.__saving_inputs__, saving_inputs)
+        self.defaultsfromdict(self.__simulation_inputs__, simulation_inputs)
+        
         # Construct PyECLOUD secondary emission object
         self.sey_mod = seec.SEY_model_ECLOUD(Emax = self.Emax,
                                              del_max = self.del_max,
@@ -232,7 +255,7 @@ class warp_pyecloud_sim(object):
         #    em.setebp()
   
         # Setup secondary emission stuff       
-        pp = warp.ParticleScraper(sim.conductors, lsavecondid = 1, 
+        pp = ParticleScraper(sim.conductors, lsavecondid = 1,
                                   lsaveintercept = 1,lcollectlpdata = 1)
 
         self.sec=Secondaries(conductors = sim.conductors, l_usenew = 1,
