@@ -2,6 +2,7 @@
 from perform_regeneration import perform_regeneration
 from saver import Saver
 from h5py_manager import dict_of_arrays_and_scalar_from_h5
+
 # PyECLOUD imports
 import PyECLOUD.myfilemanager as mfm
 import PyECLOUD.sec_emission_model_ECLOUD as seec
@@ -274,10 +275,7 @@ class warp_pyecloud_sim(object):
         
         if self.custom_plot is not None:
             plot_func = self.self_wrapped_custom_plot
-        else:
-            plot_func = self.myplots
-
-        pw.installafterstep(plot_func)
+            pw.installafterstep(plot_func)
 
         # Install field probes
         if len(self.field_probes)>0:
@@ -476,42 +474,6 @@ class warp_pyecloud_sim(object):
                                             vy = vy, vz = vz,
                                             gi = 1./self.beam_gamma,
                                             w = self.bunch_w)
-
-    def myplots(self, l_force=0):
-        chamber = self.chamber
-        if l_force or self.n_step%self.stride_imgs == 0:
-            plt.close()
-            (Nx, Ny, Nz) = np.shape(self.ecloud.wspecies.get_density())
-            fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
-            fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
-                                top = 0.94, wspace = 0.15)
-            d = (self.ecloud.wspecies.get_density()
-               + self.beam.wspecies.get_density())
-            d2  = (self.ecloud.wspecies.get_density())
-            im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet', 
-                                origin = 'lower',
-                                vmin = 0.2*np.min(d2[:, :, int(Nz/2)]),
-                                vmax = 0.8*np.max(d2[:, :, int(Nz/2)]),
-                                extent = [chamber.xmin, chamber.xmax ,
-                                          chamber.ymin, chamber.ymax])
-            axs[0].set_xlabel('x [m]')
-            axs[0].set_ylabel('y [m]')
-            axs[0].set_title('e- density')
-            fig.colorbar(im1, ax = axs[0])
-            im2 = axs[1].imshow(d[int(Nx/2), :, :], cmap = 'jet', 
-                                origin = 'lower', 
-                                vmin = 0.2*np.min(d2[int(Nx/2), :, :]), 
-                                vmax = 0.8*np.max(d2[int(Nx/2), :, :]),
-                                extent=[chamber.zmin, chamber.zmax, 
-                                        chamber.ymin, chamber.ymax], 
-                                aspect = 'auto')
-            axs[1].set_xlabel('z [m]')
-            axs[1].set_ylabel('y [m]')
-            axs[1].set_title('e- density')
-            fig.colorbar(im2, ax = axs[1])
-
-            figname = self.images_dir + '/%d.png' %int(self.n_step)
-            plt.savefig(figname)
 
     def self_wrapped_custom_plot(self, l_force = 0):
         self.custom_plot(self, l_force = l_force)
