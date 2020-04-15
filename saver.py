@@ -74,7 +74,6 @@ class Saver:
             self.numelecs = np.pad(self.numelecs, (0,N_add), 'constant')
             self.numelecs_tot = np.pad(self.numelecs_tot, (0,N_add), 'constant')
             self.N_mp = np.pad(self.N_mp, (0,N_add), 'constant')
-
         self.numelecs[n_step] = np.sum(elecs_density)
         self.numelecs_tot[n_step] = np.sum(elecs_density_tot)
         self.N_mp[n_step] = len(elecb_w)
