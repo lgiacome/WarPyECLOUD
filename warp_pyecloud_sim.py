@@ -7,7 +7,7 @@ from h5py_manager import dict_of_arrays_and_scalar_from_h5
 import PyECLOUD.myfilemanager as mfm
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 # Warp imports
-from warp import picmi, top, time, ParticleScraper
+from warp import picmi, top, time, ParticleScraper, registersolver
 from warp.particles.Secondaries import Secondaries
 # Numpy/Matplotlib imports
 import numpy as np
@@ -23,7 +23,11 @@ from tqdm import tqdm
 class warp_pyecloud_sim(object):
     __fieldsolver_inputs__ = {'nx': None, 'ny': None, 'nz': None,
                               'solver_type': 'ES', 'N_subcycle': None,
-                              'EM_method': 'Yee', 'cfl': 1.0,  'dt': None
+                              'EM_method': 'Yee', 'cfl': 1.0, 'dt': None,
+                              'main_species': None,
+                              'secondary_solver_type': None,
+                              'secondary_species': None,
+                              'secondary_EM_method': None, 'secondary_cfl': None
     }
         
     __beam_inputs__ = {'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
@@ -70,7 +74,9 @@ class warp_pyecloud_sim(object):
                 #self.__dict__[name] = kw.pop(name,getattr(top,name)) # Python2.3
                 self.__dict__[name] = kw.get(name,defvalue)
             if name in kw: del kw[name]
-        if len(kw.keys())!=0: breakpoint()
+        if kw:
+            raise TypeError("Keyword argument '%s' is out of place"%list(kw)[0])
+            
     
     def __init__(self, fieldsolver_inputs = None,
                  beam_inputs = None, ecloud_inputs = None,
@@ -112,12 +118,11 @@ class warp_pyecloud_sim(object):
         else:
             self.time_prof = self.self_wrapped_custom_time_prof
 
-        if self.solver_type == 'ES':
-            pw.top.dt = dt
-        elif self.solver_type == 'EM':
+        if self.solver_type == 'EM' or secondary_solver_type == 'EM':
             if self.dt is not None:
                 print('WARNING: dt is going to be ignored for the EM solver')
-            #self.EM_method = EM_method
+        else:
+            pw.top.dt = dt
             
         if self.flag_relativ_tracking:
             pw.top.lrelativ = pw.true
@@ -135,25 +140,25 @@ class warp_pyecloud_sim(object):
         self.bunch_rms_velocity = [0., 0., 0.]
         self.bunch_centroid_position = [0, 0, self.chamber.zmin + 1e-4]
         self.bunch_centroid_velocity = [0.,0., self.beam_beta*picmi.constants.c]
+        
+        self.species_names = ['beam', 'Ecloud']
 
         # Instantiate beam
-        
         self.beam = picmi.Species(particle_type = 'proton',
                                   particle_shape = 'linear',
-                                  name = 'beam')
+                                  name = self.species_names[0])
         self.flag_first_pass = True
 
         if self.flag_checkpointing and os.path.exists(self.temps_filename): 
             self.ecloud = picmi.Species(particle_type = 'electron',
                                         particle_shape = 'linear',
-                                        name = 'Electron background',
+                                        name = self.pecies_names[1],
                                 initial_distribution = self.load_elec_density())
         else:
             self.ecloud = picmi.Species(particle_type = 'electron',
                                         particle_shape = 'linear',
-                                        name = 'Electron background')
+                                        name = self.species_names[1])
             self.b_pass = 0
-
     
         # Setup grid and boundary conditions
         if self.solver_type == 'ES':
@@ -173,8 +178,26 @@ class warp_pyecloud_sim(object):
                                      lower_boundary_conditions = lower_bc,
                                      upper_boundary_conditions = upper_bc)
 
+        main_species_obj = np.array([])
+        secondary_species_obj = np.array([])
+        if self.main_species is None and self.secondary_species is None:
+            main_species_obj = np.array([self.beam.wspecies,
+                               self.ecloud.wspecies])
+        else:
+            for sp in main_solver_species:
+                if sp == species_names[0]:
+                    main_species_obj.append(self.beam.wspecies)
+                if sp == species_names[1]:
+                    main_species_obj.append(self.ecloud.wspecies)
+            for sp in secondary_solver_species:
+                if sp == species_names[0]:
+                    secondary_species_obj.append(self.beam.wspecies)
+                if sp == species_names[1]:
+                    secondary_species_obj.append(self.ecloud.wspecies)
+
         if self.solver_type == 'ES':
-            self.solver = picmi.ElectrostaticSolver(grid = grid)
+            self.solver = picmi.ElectrostaticSolver(grid = grid,
+                                         warp_deposition_species = main_species)
         elif self.solver_type == 'EM':
             n_pass = [[1], [1], [1]]
             stride = [[1], [1], [1]]
@@ -186,26 +209,55 @@ class warp_pyecloud_sim(object):
                                      alpha = alpha)
                                      
             self.solver = picmi.ElectromagneticSolver(grid = grid,
-                                      method = self.EM_method,
-                                      cfl = self.cfl,
-                                      source_smoother = smoother,
-                                      warp_l_correct_num_Cherenkov = False,
-                                      warp_type_rz_depose = 0,
-                                      warp_l_setcowancoefs = True,
-                                      warp_l_getrho = False,
-                                      warp_laser_func = self.laser_func,
-                                      warp_laser_source_z = self.laser_source_z,
-                                      warp_laser_polangle = self.laser_polangle,
-                                      warp_laser_emax = self.laser_emax,
-                                      warp_laser_xmin = self.laser_xmin,
-                                      warp_laser_xmax = self.laser_xmax,
-                                      warp_laser_ymin = self.laser_ymin,
-                                      warp_laser_ymax = self.laser_ymax)
+                                     method = self.EM_method, cfl = self.cfl,
+                                     source_smoother = smoother,
+                                     warp_l_correct_num_Cherenkov = False,
+                                     warp_type_rz_depose = 0,
+                                     warp_l_setcowancoefs = True,
+                                     warp_l_getrho = False,
+                                     warp_laser_func = self.laser_func,
+                                     warp_laser_source_z = self.laser_source_z,
+                                     warp_laser_polangle = self.laser_polangle,
+                                     warp_laser_emax = self.laser_emax,
+                                     warp_laser_xmin = self.laser_xmin,
+                                     warp_laser_xmax = self.laser_xmax,
+                                     warp_laser_ymin = self.laser_ymin,
+                                     warp_laser_ymax = self.laser_ymax,
+                                     warp_deposition_species = main_species_obj)
+
+        if self.secondary_solver_type == 'ES':
+            self.secondary_solver = picmi.ElectrostaticSolver(grid = grid,
+                                warp_deposition_species = secondary_species_obj)
+        elif self.secondary_solver_type == 'EM':
+            n_pass = [[1], [1], [1]]
+            stride = [[1], [1], [1]]
+            compensation = [[False], [False], [False]]
+            alpha = [[0.5], [0.5], [0.5]]
+            smoother = picmi.BinomialSmoother(n_pass = n_pass,
+                                     compensation = compensation,
+                                     stride = stride,
+                                     alpha = alpha)
+                                     
+            self.secondary_solver = picmi.ElectromagneticSolver(grid = grid,
+                                method = self.EM_method, cfl = self.cfl,
+                                source_smoother = smoother,
+                                warp_l_correct_num_Cherenkov = False,
+                                warp_type_rz_depose = 0,
+                                warp_l_setcowancoefs = True,
+                                warp_l_getrho = False,
+                                warp_deposition_species = secondary_species_obj)
+
+
 
         # Setup simulation
         sim = picmi.Simulation(solver = self.solver, verbose = 1,
                                cfl = self.cfl,
                                warp_initialize_solver_after_generate = 1)
+                               
+        if hasattr(self, 'secondary_solver'):
+            self.secondary_solver.initialize_solver_inputs()
+            registersolver(self.secondary_solver.solver)
+
 
         sim.conductors = self.chamber.conductors
 
@@ -259,7 +311,7 @@ class warp_pyecloud_sim(object):
         pp = ParticleScraper(sim.conductors, lsavecondid = 1,
                                   lsaveintercept = 1,lcollectlpdata = 1)
 
-        self.sec=Secondaries(conductors = sim.conductors, l_usenew = 1,
+        self.sec = Secondaries(conductors = sim.conductors, l_usenew = 1,
                              pyecloud_secemi_object = self.sey_mod,
                              pyecloud_nel_mp_ref = self.pyecloud_nel_mp_ref,
                              pyecloud_fact_clean = self.pyecloud_fact_clean,
@@ -274,8 +326,7 @@ class warp_pyecloud_sim(object):
             Subcycle(self.N_subcycle)
         
         if self.custom_plot is not None:
-            plot_func = self.self_wrapped_custom_plot
-            pw.installafterstep(plot_func)
+            pw.installafterstep(self.self_wrapped_custom_plot(self.custom_plot))
 
         # Install field probes
         if len(self.field_probes)>0:
@@ -303,7 +354,6 @@ class warp_pyecloud_sim(object):
         self.original = sys.stdout
 
         self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
-        plot_func(1)
 
     def self_wrapped_probe_fun_i(self): 
         self.saver.field_probe(self.ind_probe, self.pos_probe)
