@@ -320,7 +320,7 @@ class warp_pyecloud_sim(object):
             Subcycle(self.N_subcycle)
         
         if self.custom_plot is not None:
-            pw.installafterstep(self.self_wrapped_custom_plot(self.custom_plot))
+            pw.installafterstep(self.self_wrapped_custom_plot)
 
         # Install field probes
         if len(self.field_probes)>0:
@@ -328,10 +328,10 @@ class warp_pyecloud_sim(object):
                                          self.tot_nsteps, 
                                          self.field_probes_dump_stride)
 
-        for i, pos_probe in enumerate(self.field_probes):
-            self.pos_probe = pos_probe
-            self.ind_probe = i
-            pw.installafterstep(self.self_wrapped_probe_fun_i)
+            for i, pos_probe in enumerate(self.field_probes):
+                self.pos_probe = pos_probe
+                self.ind_probe = i
+                pw.installafterstep(self.self_wrapped_probe_fun_i)
 
         # Install other user-specified functions
         for fun in self.after_step_fun_list:
@@ -534,12 +534,11 @@ class warp_pyecloud_sim(object):
                                 '%s' is out of place"""%list(kw)[0])
  
     def dump(self, filename):
-#        self.solver.solver.laser_func = None
+        self.solver.solver.laser_func = None
         del self.solver.em3dfft_args['laser_func']
         self.laser_func = None
         self.text_trap = None
         self.original = None
-#        self.custom_plot = None
-#        self.custom_time_prof = None
-        self.chamber = None
+        self.custom_plot = None
+        self.custom_time_prof = None
         warpdump(filename)
