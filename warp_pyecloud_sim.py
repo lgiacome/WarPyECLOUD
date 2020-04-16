@@ -8,6 +8,7 @@ import PyECLOUD.myfilemanager as mfm
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 # Warp imports
 from warp import picmi, top, time, ParticleScraper, registersolver
+from warp import dump as warpdump
 from warp.particles.Secondaries import Secondaries
 # Numpy/Matplotlib imports
 import numpy as np
@@ -27,7 +28,8 @@ class warp_pyecloud_sim(object):
                               'main_species': None,
                               'secondary_solver_type': None,
                               'secondary_species': None,
-                              'secondary_EM_method': None, 'secondary_cfl': None
+                              'secondary_EM_method': None,
+                              'secondary_cfl': None
     }
         
     __beam_inputs__ = {'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
@@ -60,25 +62,13 @@ class warp_pyecloud_sim(object):
                        'custom_plot': None, 'images_dir': None,
                        'field_probes': [], 'field_probes_dump_stride': 100
     }
+
     __simulation_inputs__ = {'enable_trap': True,
                              'flag_relativ_tracking': True, 'chamber': False,
                              'lattice_elem': None, 'after_step_fun_list': [],
                              'tot_nsteps': None
     }
-    
-    ###### CHAMBER SHOULD NOT BE SELF...
-
-    def defaultsfromdict(self, dic, kw):
-        if kw is not None:
-            for name,defvalue in dic.items():
-                if name not in self.__dict__:
-                    self.__dict__[name] = kw.get(name,defvalue)
-                if name in kw: del kw[name]
-            if kw:
-                raise TypeError("""Keyword argument 
-                                '%s' is out of place"""%list(kw)[0])
-            
-    
+               
     def __init__(self, fieldsolver_inputs = None,
                  beam_inputs = None, ecloud_inputs = None,
                  antenna_inputs = None,
@@ -532,5 +522,24 @@ class warp_pyecloud_sim(object):
     def self_wrapped_custom_time_prof(self):
        return self.custom_time_prof(self)
 
-
-
+    
+    def defaultsfromdict(self, dic, kw):
+        if kw is not None:
+            for name,defvalue in dic.items():
+                if name not in self.__dict__:
+                    self.__dict__[name] = kw.get(name,defvalue)
+                if name in kw: del kw[name]
+            if kw:
+                raise TypeError("""Keyword argument 
+                                '%s' is out of place"""%list(kw)[0])
+ 
+    def dump(self, filename):
+#        self.solver.solver.laser_func = None
+        del self.solver.em3dfft_args['laser_func']
+        self.laser_func = None
+        self.text_trap = None
+        self.original = None
+#        self.custom_plot = None
+#        self.custom_time_prof = None
+        self.chamber = None
+        warpdump(filename)

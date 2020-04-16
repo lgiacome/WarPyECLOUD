@@ -1,6 +1,7 @@
 from warp import dump as warpdump
 from io import StringIO
 import sys
+from warp_pyecloud_sim import warp_pyecloud_sim
 
 def dump(sim, filename):
     sim.solver.solver.laser_func = None
@@ -8,8 +9,9 @@ def dump(sim, filename):
     sim.laser_func = None
     sim.text_trap = None
     sim.original = None        
-    sim.custom_plot = None
-    sim.custom_time_prof = None
+#    sim.custom_plot = None
+#    sim.custom_time_prof = None
+    sim.chamber = None
     warpdump(filename)
 
 def reinit(sim, laser_func, custom_plot, custom_time_prof = None):
