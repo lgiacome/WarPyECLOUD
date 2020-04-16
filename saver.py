@@ -16,12 +16,11 @@ class Saver:
         self.nbins = nbins
         self.output_filename = output_filename
         self.solver = solver
-
-        if (self.flag_output and not
-           (self.flag_checkpointing and os.path.exists(self.temps_filename))):
-            self.init_empty_outputs()
-        else:
-             self.restore_outputs_from_file()
+        if self.flag_output:
+            if not self.flag_checkpointing or os.path.exists(self.temps_filename):
+                self.init_empty_outputs()
+            else:
+                self.restore_outputs_from_file()
 
     def init_empty_outputs(self):
         self.numelecs = np.zeros(self.tot_nsteps)

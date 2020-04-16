@@ -53,7 +53,7 @@ class warp_pyecloud_sim(object):
     }
 
     __saving_inputs__ = {'flag_checkpointing': False, 'checkpoints': None,
-                       'flag_output': False, 'output_filename': 'output.h5',
+                       'flag_output': True, 'output_filename': 'output.h5',
                        'nbins': 100, 'radius': None, 'stride_imgs': 10,
                        'stride_output': 1000,
                        'temps_filename': 'temp_mps_info.h5',
@@ -68,14 +68,15 @@ class warp_pyecloud_sim(object):
     
     ###### CHAMBER SHOULD NOT BE SELF...
 
-    def defaultsfromdict(self,dict,kw):
-        for name,defvalue in dict.items():
-            if name not in self.__dict__:
-                #self.__dict__[name] = kw.pop(name,getattr(top,name)) # Python2.3
-                self.__dict__[name] = kw.get(name,defvalue)
-            if name in kw: del kw[name]
-        if kw:
-            raise TypeError("Keyword argument '%s' is out of place"%list(kw)[0])
+    def defaultsfromdict(self, dic, kw):
+        if kw is not None:
+            for name,defvalue in dic.items():
+                if name not in self.__dict__:
+                    self.__dict__[name] = kw.get(name,defvalue)
+                if name in kw: del kw[name]
+            if kw:
+                raise TypeError("""Keyword argument 
+                                '%s' is out of place"""%list(kw)[0])
             
     
     def __init__(self, fieldsolver_inputs = None,
@@ -118,11 +119,11 @@ class warp_pyecloud_sim(object):
         else:
             self.time_prof = self.self_wrapped_custom_time_prof
 
-        if self.solver_type == 'EM' or secondary_solver_type == 'EM':
+        if self.solver_type == 'EM' or self.secondary_solver_type == 'EM':
             if self.dt is not None:
                 print('WARNING: dt is going to be ignored for the EM solver')
         else:
-            pw.top.dt = dt
+            pw.top.dt = self.dt
             
         if self.flag_relativ_tracking:
             pw.top.lrelativ = pw.true
@@ -197,7 +198,7 @@ class warp_pyecloud_sim(object):
 
         if self.solver_type == 'ES':
             self.solver = picmi.ElectrostaticSolver(grid = grid,
-                                         warp_deposition_species = main_species)
+                                    warp_deposition_species = main_species_obj)
         elif self.solver_type == 'EM':
             n_pass = [[1], [1], [1]]
             stride = [[1], [1], [1]]
@@ -279,7 +280,7 @@ class warp_pyecloud_sim(object):
         sim.step(1)
         
         if self.tot_nsteps is None and self.n_bunches is not None:
-            self.tot_nsteps = int(np.round(b_spac*(self.n_bunches)/top.dt))
+            self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
         elif self.tot_nsteps is None and self.n_bunches is None:
             raise Exception('One between n_bunches and tot_nsteps has to be specified')
 
@@ -322,6 +323,9 @@ class warp_pyecloud_sim(object):
                      emitted_species = self.ecloud.wspecies,
                      conductor = sim.conductors)
 
+        self.ntsteps_p_bunch = int(np.round(self.b_spac/top.dt))
+        self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
+
         if self.N_subcycle is not None:
             Subcycle(self.N_subcycle)
         
@@ -343,8 +347,6 @@ class warp_pyecloud_sim(object):
         for fun in self.after_step_fun_list:
             pw.installafterstep(fun)
 
-        self.ntsteps_p_bunch = int(np.round(self.b_spac/top.dt))
-
         # aux variables
         self.perc = 10
         self.t0 = time.time()
@@ -353,7 +355,6 @@ class warp_pyecloud_sim(object):
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
         self.original = sys.stdout
 
-        self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
 
     def self_wrapped_probe_fun_i(self): 
         self.saver.field_probe(self.ind_probe, self.pos_probe)
@@ -422,7 +423,7 @@ class warp_pyecloud_sim(object):
                 print('Run terminated in %ds' %totalt)
 
     def all_steps(self):
-        for i in tqdm(range(self.tot_nsteps-self.n_step)):
+        for i in range(self.tot_nsteps-self.n_step):
             self.step()
             self.n_step += 1
 
