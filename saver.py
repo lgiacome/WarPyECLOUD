@@ -17,7 +17,7 @@ class Saver:
         self.output_filename = output_filename
         self.solver = solver
         if self.flag_output:
-            if not self.flag_checkpointing or os.path.exists(self.temps_filename):
+            if not self.flag_checkpointing or not os.path.exists(self.temps_filename):
                 self.init_empty_outputs()
             else:
                 self.restore_outputs_from_file()
