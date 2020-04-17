@@ -86,52 +86,38 @@ def dipole_plots(self, l_force=0):
         fig.suptitle('t = %1.6e' %picmi.warp.top.time, fontsize=fontsz)
         fig.colorbar(im2, ax = axs[1])
 
-        figname = 'images_rect_dipole_new'+ '/' + repr(int(self.n_step)).zfill(4) + '.png'
+        figname = self.images_dir + '/' + repr(int(self.n_step)).zfill(4) + '.png'
         plt.savefig(figname)
 
-kwargs = {'enable_trap': enable_trap,
-	'nx': nx,
-	'ny': ny, 
-	'nz': nz,
-	'n_bunches': n_bunches,
-    'b_spac' : 25e-9,
-    'beam_gamma': beam_gamma, 
-	'sigmax': sigmax,
-    'sigmay': sigmay, 
-    'sigmat': 1.000000e-09/4.,
-    'bunch_intensity': 1.1e11, 
-    'init_num_elecs': init_num_elecs_slice*nz,
-    'init_num_elecs_mp': int(0.7*N_mp_max_slice*nz), 
-    'pyecloud_nel_mp_ref': init_num_elecs_slice/(0.7*N_mp_max_slice),
-	'dt': 25e-12,
-    'pyecloud_fact_clean': 1e-6,
-	'pyecloud_fact_split': 1.5,
-    'Emax': 332., 
-    'del_max': 1.7,
-    'R0': 0.7, 
-    'E_th': 35, 
-    'sigmafit': 1.0828, 
-    'mufit': 1.6636,
-    'secondary_angle_distribution': 'cosine_3D', 
-    'N_mp_max': N_mp_max_slice*nz,
-    'N_mp_target': N_mp_max_slice/3*nz,
-	'flag_checkpointing': True,
-	'checkpoints': np.linspace(1, n_bunches, n_bunches),
-    'temps_filename': 'rect_dipole_temp.h5',
-    'flag_output': True,
-    'bunch_macro_particles': 1e7,
-    't_offs': 2.5e-9,
-    'width' : width,
-    'height' : height,
-    'output_filename': 'rect_dipole_out.h5',
-    'flag_relativ_tracking': True,
-    'lattice_elem': lattice_elem,
-    'chamber': chamber,
-    'images_dir': 'images_rect_dipole',
-    'custom_plot': dipole_plots,
-    'stride_imgs': 10000,
-}
+fieldsolver_inputs = {'solver_type':'ES', 'nx': nx, 'ny': ny, 'nz': nz,
+                      'dt': 25e-12,}
 
-sim = warp_pyecloud_sim(**kwargs)
+beam_inputs = {'n_bunches': n_bunches, 'b_spac' : 25e-9,
+               'beam_gamma': beam_gamma, 'sigmax': sigmax, 'sigmay': sigmay, 
+               'sigmat': 1.000000e-09/4., 'bunch_macro_particles': 1e7,
+               't_offs': 2.5e-9, 'bunch_intensity': 1.1e11}
+
+ecloud_inputs = {'init_num_elecs': init_num_elecs_slice*nz,
+              'init_num_elecs_mp': int(0.7*N_mp_max_slice*nz),    
+              'pyecloud_nel_mp_ref': init_num_elecs_slice/(0.7*N_mp_max_slice),
+              'pyecloud_fact_clean': 1e-6, 'pyecloud_fact_split': 1.5,
+              'Emax': 332., 'del_max': 1.7, 'R0': 0.7, 'E_th': 35,
+              'sigmafit': 1.0828, 'mufit': 1.6636,
+              'secondary_angle_distribution': 'cosine_3D', 
+              'N_mp_max': N_mp_max_slice*nz,'N_mp_target': N_mp_max_slice/3*nz}
+
+saving_inputs = {'images_dir': 'images_rect_dipole',
+                 'custom_plot': dipole_plots, 'stride_imgs': 10000,
+                 'output_filename': 'rect_dipole_out.h5'}
+
+simulation_inputs = {'enable_trap': enable_trap,
+                     'flag_relativ_tracking': True,
+                     'lattice_elem': lattice_elem, 'chamber': chamber}
+
+sim = warp_pyecloud_sim(fieldsolver_inputs = fieldsolver_inputs, 
+                        beam_inputs = beam_inputs, 
+                        ecloud_inputs = ecloud_inputs,
+                        saving_inputs = saving_inputs,
+                        simulation_inputs = simulation_inputs)
 
 sim.all_steps()
