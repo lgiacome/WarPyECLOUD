@@ -61,51 +61,69 @@ def amplitude(t, Emax, r_time):
     else:
         return 0
 
+# Pre-computations for laser_func
+freq_t = 400e6
+r_time = 10*2.5e-9
+phi = 0
+w_t = 2*np.pi*freq_t
+ww = laser_xmax - laser_xmin
+r_time = 10*2.5e-9
+w_z = c_light*np.sqrt((w_t/c_light)**2 - (np.pi/ww)**2)
+s_z = 0             # For convenience
+cwz = np.cos(w_z*s_z)
+swz = np.sin(w_z*s_z)
+
 def laser_func(y, x, t):
-    freq_t = 400e6
-    r_time = 10*2.5e-9
-    phase_delay = 0
-    w_t = 2*np.pi*freq_t
-    width = laser_xmax - laser_xmin
-    r_time = 10*2.5e-9
-    w_z = c_light*np.sqrt((w_t/c_light)**2 - (np.pi/width)**2)
-    source_z = laser_source_z
+    sw = np.sin(-np.pi/ww*(x+ww/2))
     if t<2*r_time:
-        return amplitude(t, laser_emax, r_time)*np.sin(-np.pi/width*(x+width/2))*(np.sin(w_t*t-phase_delay)*np.cos(w_z*source_z) - np.cos(w_t*t-phase_delay)*np.sin(w_z*source_z))
+        amp = amplitude(t, laser_emax, r_time)
+        return amp*sw*(np.sin(w_t*t-phi)*cwz - np.cos(w_t*t-phi)*swz)
     else:
         return 0
 
+def plots_crab(self, l_force = 0):
+    #fontsz = 16
+    #plt.rcParams['axes.labelsize'] = fontsz
+    #plt.rcParams['axes.titlesize'] = fontsz
+    #plt.rcParams['xtick.labelsize'] = fontsz
+    #plt.rcParams['ytick.labelsize'] = fontsz
+    #plt.rcParams['legend.fontsize'] = fontsz
+    #plt.rcParams['legend.title_fontsize'] = fontsz
 
-def plot_kick(self, l_force=0):
-    if self.n_step > 3500:
-        fontsz = 16
-        plt.rcParams['axes.labelsize'] = fontsz
-        plt.rcParams['axes.titlesize'] = fontsz
-        plt.rcParams['xtick.labelsize'] = fontsz
-        plt.rcParams['ytick.labelsize'] = fontsz
-        plt.rcParams['legend.fontsize'] = fontsz
-        plt.rcParams['legend.title_fontsize'] = fontsz
+    chamber = self.chamber
+    if self.laser_source_z is None: 
+        here_source_z = chamber.zmin + 0.5*(-chamber.l_main_z/2-chamber.zmin)
+    else: 
+        here_source_z = self.laser_source_z
+    em = self.solver.solver
+    k_antenna = int((here_source_z - chamber.zmin)/em.dz)
+    j_mid_waveguide = int((chamber.ycen6 - chamber.ymin)/em.dy)
 
-        mass = 1.6726e-27
-        if self.beam.wspecies.getn()>0:
-            pz = mass*self.beam.wspecies.getuz()
-            E_beam = np.sqrt((pz*picmi.clight)**2 + (mass*picmi.clight**2)**2)
-            yp = self.beam.wspecies.getyp() #np.divide(self.beam.wspecies.getuy(), self.beam.wspecies.getuz())
-            Vt = E_beam*np.tan(yp)/picmi.echarge
-            plt.figure(figsize=(8,6))
-            plt.plot(self.beam.wspecies.getz()-np.mean(self.beam.wspecies.getz()), Vt, 'x')
-            plt.plot(np.zeros(100), np.linspace(-1e6, 1e6,100),'r--')
-            plt.plot(np.linspace(-0.05,0.05,100), np.zeros(100), 'r--')
-        #    plt.plot(np.linspace(-0.2,0.2,100), 3.96e6*np.ones(100), 'g--')
-        #    plt.plot(np.linspace(-0.2,0.2,100), -3.96e6*np.ones(100), 'g--')
-        #    plt.plot(np.linspace(-0.2,0.2,100), 2.36e6*np.ones(100), 'm--')
-        #    plt.plot(np.linspace(-0.2,0.2,100), -2.36e6*np.ones(100), 'm--')
-            plt.xlabel('s  [m]')
-            plt.ticklabel_format(style = 'sci', axis = 'y', scilimits=(0,0))
-            plt.ylabel('Deflecting Voltage  [V]')
-            filename = self.images_dir + '/kick_' + repr(int(self.n_step)).zfill(4) + '.png'
-            plt.savefig(filename)
-            plt.close('all')
+    flist = ['Ex','Ey','Ez','Bx','By','Bz']
+    flist = ['Jy']
+    pw = picmi.warp
+    if pw.top.it%10==0 or l_force:
+        for ffstr in flist:
+            if ffstr == 'Ex': ff = em.gatherex()
+            if ffstr == 'Ey':
+                ff = em.gatherey()
+                maxe =35e6*self.em_scale_fac #np.max(ey[:,:,:])
+                mine = -35e6*self.em_scale_fac #np.min(ey[:,:,:])
+            if ffstr == 'Ez': ff = em.gatherez()
+            if ffstr == 'Bx': ff = em.gatherbx()
+            if ffstr == 'By': ff = em.gatherby()
+            if ffstr == 'Bz': ff = em.gatherbz()
+            if ffstr == 'elecs':
+                ff = self.ecloud.wspecies.get_density()
+                maxe = 5e9 #np.max(ey[:,:,:])
+                mine = 0 #np.min(ey[:,:,:])
+            if ffstr == 'Jy':
+                ff = em.gatherjy()
+                maxe = np.max(ff[:,:,:])
+                mine = np.min(ff[:,:,:])
+            if me==0:
+                plot_field_crab(ff, ffstr, mine, maxe, k_antenna, 
+                                j_mid_waveguide, chamber)
 
 field_probes = [[int(nx/2),int(ny/2),int(nz/2)]]
 t_offs = 5.3e-8-2.5e-9/4+2.6685127615852166e-10 - 3.335640951981521e-11
@@ -131,7 +149,7 @@ beam_inputs = {'n_bunches': n_bunches, 'b_spac': 25e-9, 'sigmax': sigmax,
 saving_inputs = {'flag_checkpointing': True,
                  'checkpoints': np.linspace(1, n_bunches, n_bunches),
                  'temps_filename': 'complete_temp.h5', 'flag_output': True,
-                 'images_dir': 'images_kick', 'custom_plot': plot_kick,
+                 'images_dir': 'images_kick', 'custom_plot': plots_crab,
                  'stride_imgs': 10, 'field_probes': field_probes,
                  'field_probes_dump_stride': 100}
 
@@ -155,6 +173,7 @@ sim.all_steps_no_ecloud()
 
 fieldsolver_inputs = beam_inputs = ecloud_inputs = antenna_inputs = None
 saving_inputs = simulations_inputs = None
-
-sim.dump('cavity.%d.dump' %picmi.warp.me)
+if picmi.warp.me == 0 and not os.path.exists('dumps'):
+    os.mkdir('dumps')
+sim.dump('dumps/cavity.dump')
 
