@@ -115,7 +115,7 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber):
     plt.savefig(filename, dpi=150)
     plt.close(fig)
 
-def plot_ecloud_density(self, l_force=0):
+def plot_density(self, l_force=0):
     chamber = self.chamber
     if l_force or self.n_step%self.stride_imgs == 0:
         (Nx, Ny, Nz) = np.shape(self.ecloud.wspecies.get_density())
