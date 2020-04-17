@@ -44,10 +44,6 @@ chamber = CrabCavityWaveguide(-max_z, max_z, disp)
 
 n_bunches = 1 
 
-freq_t = 400e6
-phase_delay = 0
-r_time = 10*2.5e-9
-
 # Antenna parameters
 laser_source_z = chamber.zmin + 0.5*(-chamber.l_main_z/2 - chamber.zmin) 
 laser_polangle = np.pi/2
@@ -66,6 +62,9 @@ def amplitude(t, Emax, r_time):
         return 0
 
 def laser_func(y, x, t):
+    freq_t = 400e6
+    r_time = 10*2.5e-9
+    phase_delay = 0
     w_t = 2*np.pi*freq_t
     width = laser_xmax - laser_xmin
     r_time = 10*2.5e-9
@@ -109,6 +108,7 @@ def plot_kick(self, l_force=0):
             plt.close('all')
 
 field_probes = [[int(nx/2),int(ny/2),int(nz/2)]]
+t_offs = 5.3e-8-2.5e-9/4+2.6685127615852166e-10 - 3.335640951981521e-11
 
 fieldsolver_inputs = {'nx': nx, 'ny': ny, 'nz': nz, 'solver_type': 'EM',
                       'EM_method': 'Yee', 'cfl': 1.}
@@ -126,7 +126,7 @@ ecloud_inputs = {'init_num_elecs': init_num_elecs,
 beam_inputs = {'n_bunches': n_bunches, 'b_spac': 25e-9, 'sigmax': sigmax,
                'sigmay': sigmay, 'sigmat': sigmat, 'beam_gamma': beam_gamma,
                'bunch_intensity': 1.1e11, 'bunch_macro_particles': 10**5,
-               't_offs': 5.1355E-08}
+               't_offs': t_offs}
 
 saving_inputs = {'flag_checkpointing': True,
                  'checkpoints': np.linspace(1, n_bunches, n_bunches),
@@ -141,7 +141,7 @@ antenna_inputs = {'laser_func': laser_func, 'laser_source_z': laser_source_z,
                   'laser_ymin': laser_ymin, 'laser_ymax': laser_ymax}
 
 simulation_inputs = {'enable_trap': enable_trap, 'chamber': chamber,
-                     'tot_nsteps': 2}
+                     'tot_nsteps': 3500}
 
 
 sim = warp_pyecloud_sim(fieldsolver_inputs = fieldsolver_inputs, 
