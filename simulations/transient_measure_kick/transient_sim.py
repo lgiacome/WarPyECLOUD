@@ -1,6 +1,5 @@
 from pathlib import Path
-from warp import *
-from warp import picmi, dump,  controllerfunctioncontainer
+from warp import picmi
 c_light = picmi.clight
 import sys
 import os
@@ -12,6 +11,7 @@ import numpy as np
 from warp_pyecloud_sim import warp_pyecloud_sim
 from chamber import CrabCavityWaveguide
 import saver as saver
+from dump_restart import dump
 from plots import plot_field_crab
 import matplotlib.pyplot as plt
 import mpi4py 
@@ -109,60 +109,47 @@ def plot_kick(self, l_force=0):
 
 field_probes = [[int(nx/2),int(ny/2),int(nz/2)]]
 
-kwargs = {'enable_trap': enable_trap,
-    'ecloud_sim': False,
-    'solver_type': 'EM',
-	'nx': nx,
-	'ny': ny, 
-	'nz': nz,
-    'Emax': 332., 
-    'del_max': 1.7,
-    'R0': 0.7, 
-    'E_th': 35, 
-    'sigmafit': 1.0828, 
-    'mufit': 1.6636,
-    'secondary_angle_distribution': 'cosine_3D', 
-    'pyecloud_nel_mp_ref': init_num_elecs/(0.7*N_mp_max),
-    'pyecloud_fact_clean': 1e-6,
-    'pyecloud_fact_split': 1.5,
-    'N_mp_max': N_mp_max,
-    'N_mp_target': N_mp_max/3,
-	'flag_checkpointing': True,
-    'n_bunches': n_bunches,
-	'checkpoints': np.linspace(1, n_bunches, n_bunches),
-    'temps_filename': 'complete_temp.h5',
-    'flag_output': True,
-    'bunch_macro_particles': 1e5,
-    'bunch_intensity': 1.1e11,
-    'sigmat': sigmat,
-    'init_num_elecs': 0,
-    'init_num_elecs_mp': 0,
-    'b_spac': 25e-9,
-    'beam_gamma': beam_gamma,
-    'sigmax': sigmax,
-    'sigmay': sigmay,
-    'sigmat': sigmat, 
-    't_offs': 1000, #5.1355E-08,
-    'images_dir': 'images_kick',
-    'chamber': chamber,
-    'custom_plot': plot_kick,
-    'stride_imgs': 10,
-    'EM_method': 'Yee',
-    'cfl': 1.,
-    'laser_func': laser_func,
-    'laser_source_z': laser_source_z,
-    'laser_polangle': laser_polangle,
-    'laser_emax': laser_emax,
-    'laser_xmin': laser_xmin,
-    'laser_xmax': laser_xmax,
-    'laser_ymin': laser_ymin,
-    'laser_ymax': laser_ymax,
-    'tot_nsteps': 3500,
-    'field_probes': field_probes,
-    'field_probes_dump_stride': 100,
+fieldsolver_inputs = {'nx': nx, 'ny': ny, 'nz': nz, 'solver_type': 'EM',
+                      'EM_method': 'Yee', 'cfl': 1.0}
+
+beam_inputs = {'b_spac': 25e-9,'beam_gamma': beam_gamma,'sigmax': sigmax,
+               'sigmay': sigmay,'sigmat': sigmat,'t_offs': 1000, #5.1355E-08,
+               'bunch_macro_particles': 1e5, 'bunch_intensity': 1.1e11,
+               'n_bunches': n_bunches,
 }
 
-sim = warp_pyecloud_sim(**kwargs)
+ecloud_inputs = {'Emax': 332., 'del_max': 1.7, 'R0': 0.7, 
+                 'E_th': 35,'sigmafit': 1.0828, 'mufit': 1.6636,
+                 'secondary_angle_distribution': 'cosine_3D', 
+                 'pyecloud_nel_mp_ref': init_num_elecs/(0.7*N_mp_max),
+                 'pyecloud_fact_clean': 1e-6, 'pyecloud_fact_split': 1.5,
+                 'N_mp_max': N_mp_max, 'N_mp_target': N_mp_max/3,
+                 'init_num_elecs': 0, 'init_num_elecs_mp': 0
+}
+
+antenna_inputs = {'laser_func': laser_func, 'laser_source_z': laser_source_z,
+                  'laser_polangle': laser_polangle, 'laser_emax': laser_emax,
+                  'laser_xmin': laser_xmin, 'laser_xmax': laser_xmax,
+                  'laser_ymin': laser_ymin, 'laser_ymax': laser_ymax
+}
+
+saving_inputs = {'flag_checkpointing': True,
+                 'checkpoints': np.linspace(1, n_bunches, n_bunches),
+                 'temps_filename': 'complete_temp.h5', 'flag_output': True,
+                 'images_dir': 'images_kick', 'custom_plot': plot_kick,
+                 'stride_imgs': 10, 'field_probes': field_probes,
+                 'field_probes_dump_stride': 100,
+}
+
+simulation_inputs = {'enable_trap': True, 'chamber': chamber, 'tot_nsteps': 3500}
+
+sim = warp_pyecloud_sim(fieldsolver_inputs = fieldsolver_inputs, 
+                        beam_inputs = beam_inputs, 
+                        ecloud_inputs = ecloud_inputs, 
+                        antenna_inputs = antenna_inputs,
+                        saving_inputs = saving_inputs, 
+                        simulation_inputs = simulation_inputs)
+
 sim.all_steps_no_ecloud()
 kwargs = None
 base_folder = str(Path(os.getcwd()).parent.parent)
@@ -170,5 +157,5 @@ cwd = str(Path(os.getcwd()))
 folder = base_folder + '/dumps'
 if picmi.warp.me == 0 and not os.path.exists(folder):
     os.makedirs(folder)
-sim.dump(folder+ '/cavity.%d.dump' %picmi.warp.me)
+dump(sim, folder+ '/cavity.%d.dump' %picmi.warp.me)
 
