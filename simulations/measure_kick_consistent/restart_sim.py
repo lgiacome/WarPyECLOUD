@@ -10,6 +10,7 @@ BIN = os.path.expanduser("../../")
 if BIN not in sys.path:
     sys.path.append(BIN)
 
+from dump_restart import reinit
 import numpy as np
 #from warp_pyecloud_sim import warp_pyecloud_sim
 #from chamber import CrabCavityWaveguide
@@ -115,7 +116,7 @@ restart(dumpfile)
 sim.bunch_profile = np.zeros(10000)
 sim.t_offs = 5.3e-8 #5.1355E-08
 #sim.enable_trap = False
-sim.reinit(laser_func, plot_kick_here ,custom_time_prof = my_gaussian_time_prof)
+reinit(sim, laser_func, plot_kick_here ,custom_time_prof = my_gaussian_time_prof)
 sim.tot_nsteps = 1000
 sim.saver.extend_probe_vectors(sim.tot_nsteps)
 sim.all_steps_no_ecloud()
