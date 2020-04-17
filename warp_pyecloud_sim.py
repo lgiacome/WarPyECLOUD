@@ -66,7 +66,7 @@ class warp_pyecloud_sim(object):
     __simulation_inputs__ = {'enable_trap': True,
                              'flag_relativ_tracking': True, 'chamber': False,
                              'lattice_elem': None, 'after_step_fun_list': [],
-                             'tot_nsteps': None
+                             'tot_nsteps': None, 't_end': None
     }
                
     def __init__(self, fieldsolver_inputs = None,
@@ -96,7 +96,12 @@ class warp_pyecloud_sim(object):
             print("""WARNING: if both n_bunches and tot_nsteps are specified 
                    tot_nsteps is going to be ignored and the number of steps is 
                    going to be determined basing on n_bunches and dt""")
-                   
+
+        if self.n_bunches is not None and self.t_end is not None:
+            print("""WARNING: if both n_bunches and t_end are specified
+                   tot_nsteps is going to be ignored and the number of steps is
+                   going to be determined basing on n_bunches and dt""")
+
         if not os.path.exists(self.images_dir) and picmi.warp.me==0:
             os.makedirs(self.images_dir)
 
@@ -271,8 +276,10 @@ class warp_pyecloud_sim(object):
         
         if self.tot_nsteps is None and self.n_bunches is not None:
             self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
+        elif self.tot_nsteps is None and self.t_end is not None:
+            self.tot_nsteps = int(np.round(self.t_end/top.dt))
         elif self.tot_nsteps is None and self.n_bunches is None:
-            raise Exception('One between n_bunches and tot_nsteps has to be specified')
+            raise Exception('One between n_bunches, tot_nsteps, t_end has to be specified')
 
         self.saver = Saver(self.flag_output, self.flag_checkpointing,
                            self.tot_nsteps, self.n_bunches, self.nbins,
