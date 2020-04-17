@@ -113,12 +113,11 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber):
         print(os.getcwd())
     filename = 'images_cavity/' + ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
     plt.savefig(filename, dpi=150)
-    plt.clf()
+    plt.close(fig)
 
 def plot_ecloud_density(self, l_force=0):
     chamber = self.chamber
     if l_force or self.n_step%self.stride_imgs == 0:
-        plt.close()
         (Nx, Ny, Nz) = np.shape(self.ecloud.wspecies.get_density())
         fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
         fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
@@ -150,4 +149,4 @@ def plot_ecloud_density(self, l_force=0):
 
         figname = self.images_dir + '/%d.png' %int(self.n_step)
         plt.savefig(figname)
-
+        plt.close(fig)
