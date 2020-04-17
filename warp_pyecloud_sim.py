@@ -420,7 +420,7 @@ class warp_pyecloud_sim(object):
                 print('Run terminated in %ds' %totalt)
 
     def all_steps(self):
-        for i in range(self.tot_nsteps-self.n_step):
+        for i in range(self.n_step, self.tot_nsteps):
             self.step()
             self.n_step += 1
 
@@ -430,13 +430,27 @@ class warp_pyecloud_sim(object):
                 sys.stdout = self.text_trap
                 picmi.warp.step(1)
                 sys.stdout = self.original
+                if self.flag_output:
+                    self.saver.update_outputs(self.ecloud.wspecies, self.nz,
+                                              self.n_step)
+                if self.flag_output and self.n_step%self.stride_output == 0:
+                    self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax,
+                                            self.ecloud.wspecies, self.b_pass)
                 self.n_step += 1
+
         else:
             for i in range(self.tot_nsteps):
                 sys.stdout = self.text_trap
                 picmi.warp.step(1)
                 sys.stdout = self.original
+                if self.flag_output:
+                    self.saver.update_outputs(self.ecloud.wspecies, self.nz,
+                                              self.n_step)
+                if self.flag_output and self.n_step%self.stride_output == 0:
+                    self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax,
+                                            self.ecloud.wspecies, self.b_pass)
                 self.n_step += 1
+
 
     def init_uniform_density(self):
         pwt = picmi.warp.top

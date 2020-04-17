@@ -149,9 +149,9 @@ beam_inputs = {'n_bunches': n_bunches, 'b_spac': 25e-9, 'sigmax': sigmax,
 saving_inputs = {'flag_checkpointing': True,
                  'checkpoints': np.linspace(1, n_bunches, n_bunches),
                  'temps_filename': 'complete_temp.h5', 'flag_output': True,
-                 'images_dir': 'images_crab', 'custom_plot': plots_crab,
+                 'images_dir': 'images_crab', 'custom_plot': None,
                  'stride_imgs': 10, 'field_probes': field_probes,
-                 'field_probes_dump_stride': 100}
+                 'field_probes_dump_stride': 100, 'stride_output': 1000}
 
 antenna_inputs = {'laser_func': laser_func, 'laser_source_z': laser_source_z,
                   'laser_polangle': laser_polangle, 'laser_emax': laser_emax,
