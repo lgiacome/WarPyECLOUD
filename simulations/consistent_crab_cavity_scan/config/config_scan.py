@@ -47,7 +47,7 @@ for i, Emax in enumerate(Emax_vect):
     curr_sim = current_sim_folder+'/transient_sim.py'
     
     rl.replaceline_and_save(fname = curr_sim,
-     findln = 'laser_emax = ', newline = 'laser_emax = %1.0e,\n'%Emax)
+     findln = 'laser_emax = ', newline = 'laser_emax = %1.0e\n'%Emax)
       
     rl.replaceline_and_save(fname = curr_sim,
      findln = "images_dir = ", newline = "images_dir = '"+current_sim_folder+"/images'\n")

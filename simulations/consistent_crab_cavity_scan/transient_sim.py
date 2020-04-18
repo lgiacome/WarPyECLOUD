@@ -21,9 +21,9 @@ enable_trap = True
 N_mp_max = 60000
 init_num_elecs = 2*10**7
 
-nx = 200
-ny = 200
-nz = 200
+nx = 100
+ny = 100
+nz = 100
 
 # Compute sigmas
 nemittx = 2.5e-6
