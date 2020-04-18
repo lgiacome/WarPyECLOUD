@@ -50,13 +50,16 @@ for i, Emax in enumerate(Emax_vect):
      findln = 'laser_emax = ', newline = 'laser_emax = %1.0e\n'%Emax)
       
     rl.replaceline_and_save(fname = curr_sim,
-     findln = "images_dir = ", newline = "images_dir = '"+current_sim_folder+"/images'\n")
+     findln = "images_dir = ", newline = "images_dir = '" +current_sim_folder+ "/images'\n")
 
     rl.replaceline_and_save(fname = curr_sim,
      findln = "temps_filename = ", newline = "temps_filename = '"+current_sim_folder+"/transient_temp.h5'\n")
 
     rl.replaceline_and_save(fname = curr_sim,
-     findln = "output_filename = ", newline = "output_filename = '"+current_sim_folder+"/transient_out.h5'\n")
+     findln = "output_filename = ", newline = "output_filename = '" +current_sim_folder+"/transient_out.h5'\n")
+
+    rl.replaceline_and_save(fname = curr_sim,
+     findln = "dump_folder = ", newline = "dump_folder = '" +current_sim_folder+"/dumps'\n")
  
     launch_lines1 = ['bsub -B -N -R "rusage[mem=4096]" -o '
                     + current_sim_folder +

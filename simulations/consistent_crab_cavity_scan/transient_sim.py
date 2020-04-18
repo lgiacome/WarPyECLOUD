@@ -132,8 +132,11 @@ sim.all_steps_no_ecloud()
 
 fieldsolver_inputs = beam_inputs = ecloud_inputs = antenna_inputs = None
 saving_inputs = simulations_inputs = None
-if picmi.warp.me == 0 and not os.path.exists('dumps'):
-    os.mkdir('dumps')
-    
-sim.dump('dumps/cavity.dump')
+
+dump_folder = 'dumps'
+
+if picmi.warp.me == 0 and not os.path.exists(dump_folder):
+    os.mkdir(dump_folder)
+
+sim.dump(dump_folder + '/cavity.dump')
 
