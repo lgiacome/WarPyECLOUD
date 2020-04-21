@@ -4,9 +4,9 @@ from warp import picmi, dump,  controllerfunctioncontainer
 c_light = picmi.clight
 import sys
 import os
-BIN = os.path.expanduser("../../")
-if BIN not in sys.path:
-    sys.path.append(BIN)
+#BIN = os.path.expanduser("../../")
+#if BIN not in sys.path:
+#    sys.path.append(BIN)
 
 import numpy as np
 from warp_pyecloud_sim import warp_pyecloud_sim
@@ -16,9 +16,9 @@ from plots import plot_field_crab
 import matplotlib.pyplot as plt
 import mpi4py 
 
-enable_trap = True
+enable_trap = False
 
-N_mp_max = 60000
+N_mp_max = 6000000
 init_num_elecs = 2*10**7
 
 nx = 100
