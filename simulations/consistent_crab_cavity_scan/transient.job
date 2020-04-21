@@ -1,0 +1,29 @@
+#!/bin/bash
+
+PYECLOUDPATH=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/PySTUFF
+WARPYECLOUDPATH=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD
+CURRDIR=
+export CURRDIR
+
+source /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/venvs/py3/bin/activate
+which python
+
+PYTHONPATH=$PYECLOUDPATH
+PYTHONPATH=$PYTHONPATH:$WARPYECLOUDPATH
+export PYTHONPATH
+echo $PYTHONPATH
+
+# Copy input and executable
+
+cp ${CURRDIR}/transient_sim.py .
+
+#execute beam generation
+export NCPUS=${NCPUS:-10}
+/usr/lib64/openmpi3/bin/mpirun -n $NCPUS python transient_sim.py -p 1 1 $NCPUS
+
+#save result
+cp transient_temp.h5 ${CURRDIR}
+cp transient_out.h5 ${CURRDIR}
+cp probe.h5 ${CURRDIR}
+mkdir ${CURRDIR}/dumps
+cp dumps/cavity.dump ${CURRDIR}/dumps
