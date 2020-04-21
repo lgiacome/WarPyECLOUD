@@ -1,0 +1,28 @@
+#!/bin/bash
+
+PYECLOUDPATH=/afs/cern.ch/work/l/lgiacome/sim_workspace_mpi_py3/PySTUFF/python3
+WARPYECLOUDPATH=/afs/cern.ch/work/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD
+CURRDIR=
+export CURRDIR
+
+source /afs/cern.ch/work/l/lgiacome/sim_workspace_mpi_py3/miniconda3/bin/activate
+which python
+
+PYTHONPATH=$PYECLOUDPATH
+PYTHONPATH=$PYTHONPATH:$WARPYECLOUDPATH
+export PYTHONPATH
+echo $PYTHONPATH
+
+# Copy input and executable
+
+cp ${CURRDIR}/restart_sim.py .
+mkdir dumps
+cp ${CURRDIR}/dumps/cavity.dump dumps
+
+#execute beam generation
+python restart_sim.py
+
+#save result
+cp transient_temp.h5 ${CURRDIR}
+cp transient_out.h5 ${CURRDIR}
+cp probe.h5 ${CURRDIR}
