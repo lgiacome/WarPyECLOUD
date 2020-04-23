@@ -148,7 +148,7 @@ class warp_pyecloud_sim(object):
         if self.flag_checkpointing and os.path.exists(self.temps_filename): 
             self.ecloud = picmi.Species(particle_type = 'electron',
                                         particle_shape = 'linear',
-                                        name = self.pecies_names[1],
+                                        name = self.species_names[1],
                                 initial_distribution = self.load_elec_density())
         else:
             self.ecloud = picmi.Species(particle_type = 'electron',
