@@ -343,8 +343,8 @@ class Triangulation:
 
         self.conductors = tri
 
-        self.upper_bound = [np.min(points[0,:]), np.min(points[1,:]), np.min(points[2,:])]
-        self.lower_bound = [np.max(points[0,:]), np.max(points[1,:]), np.max(points[2,:])]    
+        self.upper_bound = [np.min(points[:,0]), np.min(points[:,1]), np.min(points[:,2])]
+        self.lower_bound = [np.max(points[:,0]), np.max(points[:,1]), np.max(points[:,2])]    
 
 
     def is_outside(self, xx, yy, zz):
