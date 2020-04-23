@@ -107,8 +107,11 @@ ecloud_inputs = {'init_num_elecs': init_num_elecs_slice*nz,
               'secondary_angle_distribution': 'cosine_3D', 
               'N_mp_max': N_mp_max_slice*nz,'N_mp_target': N_mp_max_slice/3*nz}
 
+def noplots(l_force=1):
+    pass
+
 saving_inputs = {'images_dir': 'images_triangulation',
-                 'custom_plot': dipole_plots, 'stride_imgs': 10000,
+                 'custom_plot': noplots, 'stride_imgs': 10000,
                  'output_filename': 'triangulation_out.h5', 
                  'flag_checkpointing': True,
                  'checkpoints': np.linspace(1,n_bunches,n_bunches)}
