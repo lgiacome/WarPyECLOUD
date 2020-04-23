@@ -134,7 +134,7 @@ class warp_pyecloud_sim(object):
 
         self.bunch_rms_size = [self.sigmax, self.sigmay, self.sigmaz]
         self.bunch_rms_velocity = [0., 0., 0.]
-        self.bunch_centroid_position = [0, 0, self.chamber.zmin + 1e-4]
+        self.bunch_centroid_position = [0, 0, self.chamber.lower_bound[2]+1e-4]
         self.bunch_centroid_velocity = [0.,0., self.beam_beta*picmi.constants.c]
         
         self.species_names = ['beam', 'Ecloud']
@@ -410,7 +410,6 @@ class warp_pyecloud_sim(object):
             if self.flag_output:
                 self.saver.update_outputs(self.ecloud.wspecies, self.nz,
                                           self.n_step) 
-            self.n_step += 1
 
             if self.n_step > self.tot_nsteps:
                 # Timer
@@ -454,7 +453,7 @@ class warp_pyecloud_sim(object):
 
     def init_uniform_density(self):
         pwt = picmi.warp.top
-        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt):
+        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt*0.99):
             chamber = self.chamber
             lower_bound = chamber.lower_bound
             upper_bound = chamber.upper_bound
