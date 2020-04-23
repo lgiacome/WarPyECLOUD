@@ -328,10 +328,6 @@ class Triangulation:
         Ntri = np.shape(triangles2points)[0]
         triangles = points[triangles2points].transpose(2,1,0)
 
-        triangles_clock = triangles.copy()
-        for i in range(Ntri):
-            triangles_clock[:,[0,1],i] = triangles[:,[1,0],i]
-
         self.xmin = np.min(points[:,0]) - ghost_x
         self.xmax = np.max(points[:,0]) + ghost_x
         self.ymin = np.min(points[:,1]) - ghost_y
@@ -339,12 +335,12 @@ class Triangulation:
         self.zmin = np.min(points[:,2]) - ghost_z
         self.zmax = np.max(points[:,2]) + ghost_z
 
-        tri = picmi.warp.Triangles(triangles_clock, condid = condid)
+        tri = picmi.warp.Triangles(triangles, condid = condid)
 
         self.conductors = tri
 
-        self.upper_bound = [np.min(points[:,0]), np.min(points[:,1]), np.min(points[:,2])]
-        self.lower_bound = [np.max(points[:,0]), np.max(points[:,1]), np.max(points[:,2])]    
+        self.lower_bound = [np.min(points[:,0]), np.min(points[:,1]), np.min(points[:,2])]
+        self.upper_bound = [np.max(points[:,0]), np.max(points[:,1]), np.max(points[:,2])]    
 
 
     def is_outside(self, xx, yy, zz):
