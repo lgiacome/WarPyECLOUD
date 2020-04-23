@@ -26,7 +26,7 @@ z_end = z_length/2
 By = 0.53549999999999998
 
 filename = 'cube_dipo.msh'
-chamber = Triangulation(filename)
+chamber = Triangulation(filename, ghost_z = 0)
 lattice_elem = Dipole(chamber.zmin, chamber.zmax, By)
 
 nx = int(np.ceil(width/dh))
@@ -42,7 +42,7 @@ beam_gamma = 479.
 beam_beta = np.sqrt(1-1/(beam_gamma**2))
 sigmax = np.sqrt(beta_x*nemittx/(beam_gamma*beam_beta))
 sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
-n_bunches = 50
+n_bunches = 10
 print(sigmax)
 
 def dipole_plots(self, l_force=0):
@@ -66,7 +66,7 @@ def dipole_plots(self, l_force=0):
         d2  = (self.ecloud.wspecies.get_density())
         im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet',
               origin = 'lower', vmin = 0,
-              vmax = 1e13,
+              vmax = 1e11,
               extent = [chamber.xmin, chamber.xmax ,
                         chamber.ymin, chamber.ymax])
         axs[0].set_xlabel('x [m]')
@@ -76,7 +76,7 @@ def dipole_plots(self, l_force=0):
         im2 = axs[1].imshow(d[int(Nx/2), :, :], cmap = 'jet',
                             origin = 'lower',
                             vmin = 0,
-                            vmax = 1e13,
+                            vmax = 1e11,
                             extent=[chamber.zmin, chamber.zmax,
                                     chamber.ymin, chamber.ymax])
 
@@ -99,7 +99,7 @@ beam_inputs = {'n_bunches': n_bunches, 'b_spac' : 25e-9,
                't_offs': 2.5e-9, 'bunch_intensity': 1.1e11}
 
 ecloud_inputs = {'init_num_elecs': init_num_elecs_slice*nz,
-              'init_num_elecs_mp': int(0.7*N_mp_max_slice*nz),    
+              'init_num_elecs_mp': int(N_mp_max_slice*0.7*nz),    
               'pyecloud_nel_mp_ref': init_num_elecs_slice/(0.7*N_mp_max_slice),
               'pyecloud_fact_clean': 1e-6, 'pyecloud_fact_split': 1.5,
               'Emax': 332., 'del_max': 1.7, 'R0': 0.7, 'E_th': 35,
@@ -107,14 +107,15 @@ ecloud_inputs = {'init_num_elecs': init_num_elecs_slice*nz,
               'secondary_angle_distribution': 'cosine_3D', 
               'N_mp_max': N_mp_max_slice*nz,'N_mp_target': N_mp_max_slice/3*nz}
 
-def noplots(l_force=1):
+def noplots(self, l_force=1):
     pass
 
 saving_inputs = {'images_dir': 'images_triangulation',
-                 'custom_plot': noplots, 'stride_imgs': 10000,
+                 'custom_plot': dipole_plots, 'stride_imgs': 10,
                  'output_filename': 'triangulation_out.h5', 
-                 'flag_checkpointing': True,
-                 'checkpoints': np.linspace(1,n_bunches,n_bunches)}
+                 'flag_checkpointing': False,
+                 'checkpoints': np.linspace(1,n_bunches,n_bunches),
+                 'stride_output': 10}
 
 simulation_inputs = {'enable_trap': enable_trap,
                      'flag_relativ_tracking': True,
