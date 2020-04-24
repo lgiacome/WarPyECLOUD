@@ -2,7 +2,7 @@ import numpy as np
 from numpy.random import rand
 from warp import echarge as charge
 from warp import emass as mass
-from warp import top
+from warp import top, pprint
 from warp_parallel import parallelsum
 
 def perform_regeneration(target_N_mp, wsp, Sec):
@@ -29,14 +29,18 @@ def perform_regeneration(target_N_mp, wsp, Sec):
     i_init = top.pgroup.ins[wsp.getjs()]
     inds_clear = np.where(flag_keep == False)[0] + i_init-1
     inds_keep = np.where(flag_keep == True)[0] + i_init -1
-
     # Compute the charge after the regeneration in the whole domain (also the other processes)
-    chrg_after = parallelsum(np.sum(top.pgroup.pid[inds_keep,top.wpid-1]))
+    if np.sum(inds_keep) > 0:
+        chrg_after = parallelsum(np.sum(top.pgroup.pid[inds_keep,top.wpid-1]))
+    else:
+        chrg_after = parallelsum(0)
     # Resize the survivors
     correct_fact = chrg / chrg_after
-    top.pgroup.pid[inds_keep,top.wpid-1] = top.pgroup.pid[inds_keep,top.wpid-1]*correct_fact
+    if np.sum(inds_keep) > 0:
+        top.pgroup.pid[inds_keep,top.wpid-1] = top.pgroup.pid[inds_keep,top.wpid-1]*correct_fact
     # Flag the particles to be cleared
-    top.pgroup.gaminv[inds_clear] = 0.
+    if np.sum(inds_clear > 0):
+        top.pgroup.gaminv[inds_clear] = 0.
 
     # Warning: top.clearpart is a Fortran routine so it has one-based ordering..
     top.clearpart(top.pgroup, wsp.getjs()+1, 1)        
