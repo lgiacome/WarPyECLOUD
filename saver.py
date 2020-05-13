@@ -7,7 +7,7 @@ from warp import picmi
 class Saver:
 
     def __init__(self, flag_output, flag_checkpointing, tot_nsteps, n_bunches,
-                 nbins, solver, output_filename= None, temps_filename = None):
+                 nbins, solver, output_filename= None, temps_filename = None, probe_filename = 'probe.h5'):
         self.flag_checkpointing = flag_checkpointing
         self.flag_output = flag_output
         self.temps_filename = temps_filename
@@ -16,6 +16,7 @@ class Saver:
         self.nbins = nbins
         self.output_filename = output_filename
         self.solver = solver
+        self.probe_filename = probe_filename
         if self.flag_output:
             if not self.flag_checkpointing or not os.path.exists(self.temps_filename):
                 self.init_empty_outputs()
@@ -145,8 +146,7 @@ class Saver:
                     dict_out['by'] = self.b_y_vec
                     dict_out['bz'] = self.b_z_vec
                     dict_out['t_probes'] = self.t_probes
-                    filename = 'probes.h5'
-                    dict_to_h5_serial(dict_out, filename)
+                    dict_to_h5_serial(dict_out, self.probe_filename)
 
     def extend_probe_vectors(self, n_add_steps):
         add_zeros_fields = np.zeros((self.Nprobes, n_add_steps))
