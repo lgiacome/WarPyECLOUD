@@ -7,7 +7,7 @@ from h5py_manager import dict_of_arrays_and_scalar_from_h5
 import PyECLOUD.myfilemanager as mfm
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 # Warp imports
-from warp import picmi, top, time, ParticleScraper, registersolver
+from warp import picmi, top, time, ParticleScraper, registersolver, pprint
 from warp import dump as warpdump
 from warp.particles.Secondaries import Secondaries
 # Numpy/Matplotlib imports
@@ -21,13 +21,15 @@ import os
 # Nice outputs
 from tqdm import tqdm
 
+from mpi4py import MPI
+
 class warp_pyecloud_sim(object):
     __fieldsolver_inputs__ = {'nx': None, 'ny': None, 'nz': None,
                               'solver_type': 'ES', 'N_subcycle': None,
                               'EM_method': 'Yee', 'cfl': 1.0, 'dt': None,
-                              'main_species': None,
+                              'main_solver_species': None,
                               'secondary_solver_type': None,
-                              'secondary_species': None,
+                              'secondary_solver_species': None,
                               'secondary_EM_method': None,
                               'secondary_cfl': None
     }
@@ -157,44 +159,50 @@ class warp_pyecloud_sim(object):
             self.b_pass = 0
     
         # Setup grid and boundary conditions
-        if self.solver_type == 'ES':
-            lower_bc = ['dirichlet', 'dirichlet', 'dirichlet']
-            upper_bc = ['dirichlet', 'dirichlet', 'dirichlet']
-        if self.solver_type == 'EM':
-            lower_bc = ['open', 'open', 'open']
-            upper_bc = ['open', 'open', 'open']
+        lower_bc_ES = ['dirichlet', 'dirichlet', 'dirichlet']
+        upper_bc_ES = ['dirichlet', 'dirichlet', 'dirichlet']
+        lower_bc_EM = ['open', 'open', 'open']
+        upper_bc_EM = ['open', 'open', 'open']
 
         number_of_cells = [self.nx, self.ny, self.nz]
         lower_bound = [self.chamber.xmin, self.chamber.ymin, self.chamber.zmin]
         upper_bound = [self.chamber.xmax, self.chamber.ymax, self.chamber.zmax]
-        
-        grid = picmi.Cartesian3DGrid(number_of_cells = number_of_cells,
-                                     lower_bound = lower_bound,
-                                     upper_bound = upper_bound,
-                                     lower_boundary_conditions = lower_bc,
-                                     upper_boundary_conditions = upper_bc)
+        main_solver_species_obj = []
 
-        main_species_obj = np.array([])
-        secondary_species_obj = np.array([])
-        if self.main_species is None and self.secondary_species is None:
-            main_species_obj = np.array([self.beam.wspecies,
+        secondary_solver_species_obj = []
+        if self.main_solver_species is None and self.secondary_solver_species is None:
+            main_solver_species_obj = np.array([self.beam.wspecies,
                                self.ecloud.wspecies])
         else:
-            for sp in main_solver_species:
-                if sp == species_names[0]:
-                    main_species_obj.append(self.beam.wspecies)
-                if sp == species_names[1]:
-                    main_species_obj.append(self.ecloud.wspecies)
-            for sp in secondary_solver_species:
-                if sp == species_names[0]:
-                    secondary_species_obj.append(self.beam.wspecies)
-                if sp == species_names[1]:
-                    secondary_species_obj.append(self.ecloud.wspecies)
+            for sp in self.main_solver_species:
+                if sp == self.species_names[0]:
+                    main_solver_species_obj.append(self.beam.wspecies)
+                if sp == self.species_names[1]:
+                    main_solver_species_obj.append(self.ecloud.wspecies)
+            for sp in self.secondary_solver_species:
+                if sp == self.species_names[0]:
+                    secondary_solver_species_obj.append(self.beam.wspecies)
+                if sp == self.species_names[1]:
+                    secondary_solver_species_obj.append(self.ecloud.wspecies)
 
         if self.solver_type == 'ES':
-            self.solver = picmi.ElectrostaticSolver(grid = grid,
+           grid = picmi.Cartesian3DGrid(number_of_cells = number_of_cells,
+                                         lower_bound = lower_bound,
+                                         upper_bound = upper_bound,
+                                         lower_boundary_conditions = lower_bc_ES,
+                                         upper_boundary_conditions = upper_bc_ES)
+
+           self.solver = picmi.ElectrostaticSolver(grid = grid,
                                     warp_deposition_species = main_species_obj)
         elif self.solver_type == 'EM':
+            grid = picmi.Cartesian3DGrid(number_of_cells = number_of_cells,
+                                     lower_bound = lower_bound,
+                                     upper_bound = upper_bound,
+                                     lower_boundary_conditions = lower_bc_EM,
+                                     upper_boundary_conditions = upper_bc_EM)
+
+
+
             n_pass = [[1], [1], [1]]
             stride = [[1], [1], [1]]
             compensation = [[False], [False], [False]]
@@ -219,42 +227,12 @@ class warp_pyecloud_sim(object):
                                      warp_laser_xmax = self.laser_xmax,
                                      warp_laser_ymin = self.laser_ymin,
                                      warp_laser_ymax = self.laser_ymax,
-                                     warp_deposition_species = main_species_obj)
-
-        if self.secondary_solver_type == 'ES':
-            self.secondary_solver = picmi.ElectrostaticSolver(grid = grid,
-                                warp_deposition_species = secondary_species_obj)
-        elif self.secondary_solver_type == 'EM':
-            n_pass = [[1], [1], [1]]
-            stride = [[1], [1], [1]]
-            compensation = [[False], [False], [False]]
-            alpha = [[0.5], [0.5], [0.5]]
-            smoother = picmi.BinomialSmoother(n_pass = n_pass,
-                                     compensation = compensation,
-                                     stride = stride,
-                                     alpha = alpha)
-                                     
-            self.secondary_solver = picmi.ElectromagneticSolver(grid = grid,
-                                method = self.EM_method, cfl = self.cfl,
-                                source_smoother = smoother,
-                                warp_l_correct_num_Cherenkov = False,
-                                warp_type_rz_depose = 0,
-                                warp_l_setcowancoefs = True,
-                                warp_l_getrho = False,
-                                warp_deposition_species = secondary_species_obj)
-
-
+                                     warp_deposition_species = main_solver_species_obj)
 
         # Setup simulation
         sim = picmi.Simulation(solver = self.solver, verbose = 1,
                                cfl = self.cfl,
                                warp_initialize_solver_after_generate = 1)
-                               
-        if hasattr(self, 'secondary_solver'):
-            self.secondary_solver.initialize_solver_inputs()
-            registersolver(self.secondary_solver.solver)
-
-
         sim.conductors = self.chamber.conductors
 
         sim.add_species(self.beam, layout = None,
@@ -273,10 +251,10 @@ class warp_pyecloud_sim(object):
         if self.init_num_elecs_mp > 0:
             picmi.warp.installuserinjection(self.init_uniform_density)
         sim.step(1)
-        
-        if self.tot_nsteps is None and self.n_bunches is not None:
-            self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
-        elif self.tot_nsteps is None and self.t_end is not None:
+         
+        #if self.tot_nsteps is None and self.n_bunches is not None:
+        #    self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
+        if self.tot_nsteps is None and self.t_end is not None:
             self.tot_nsteps = int(np.round(self.t_end/top.dt))
         elif self.tot_nsteps is None and self.n_bunches is None:
             raise Exception('One between n_bunches, tot_nsteps, t_end has to be specified')
@@ -288,6 +266,47 @@ class warp_pyecloud_sim(object):
  
         self.solver.solver.installconductor(sim.conductors, 
                                             dfill = picmi.warp.largepos)
+
+        if self.secondary_solver_type == 'ES':
+            grid = picmi.Cartesian3DGrid(number_of_cells = number_of_cells,
+                                         lower_bound = lower_bound,
+                                         upper_bound = upper_bound,
+                                         lower_boundary_conditions = lower_bc_ES,
+                                         upper_boundary_conditions = upper_bc_ES)
+            self.secondary_solver = picmi.ElectrostaticSolver(grid = grid,
+                                warp_deposition_species = secondary_solver_species_obj)
+        elif self.secondary_solver_type == 'EM':
+
+            grid = picmi.Cartesian3DGrid(number_of_cells = number_of_cells,
+                                     lower_bound = lower_bound,
+                                     upper_bound = upper_bound,
+                                     lower_boundary_conditions = lower_bc_EM,
+                                     upper_boundary_conditions = upper_bc_EM)
+
+            n_pass = [[1], [1], [1]]
+            stride = [[1], [1], [1]]
+            compensation = [[False], [False], [False]]
+            alpha = [[0.5], [0.5], [0.5]]
+            smoother = picmi.BinomialSmoother(n_pass = n_pass,
+                                     compensation = compensation,
+                                     stride = stride,
+                                     alpha = alpha)
+                                     
+            self.secondary_solver = picmi.ElectromagneticSolver(grid = self.grid_EM,
+                                method = self.EM_method, cfl = self.cfl,
+                                source_smoother = smoother,
+                                warp_l_correct_num_Cherenkov = False,
+                                warp_type_rz_depose = 0,
+                                warp_l_setcowancoefs = True,
+                                warp_l_getrho = False,
+                                warp_deposition_species = secondary_species_obj)
+                       
+        if hasattr(self, 'secondary_solver'):
+            self.secondary_solver.initialize_solver_inputs()
+            registersolver(self.secondary_solver.solver)
+            self.secondary_solver.solver.installconductor(sim.conductors, 
+                                                     dfill = picmi.warp.largepos)
+
         sim.step(1)
 
         # Initialize the EM fields
@@ -322,7 +341,6 @@ class warp_pyecloud_sim(object):
 
         self.ntsteps_p_bunch = int(np.round(self.b_spac/top.dt))
         self.n_step = int(np.round(self.b_pass*self.ntsteps_p_bunch))
-
         if self.N_subcycle is not None:
             Subcycle(self.N_subcycle)
         
@@ -426,7 +444,7 @@ class warp_pyecloud_sim(object):
 
     def all_steps_no_ecloud(self):
         if picmi.warp.me == 0:
-            for i in tqdm(range(self.tot_nsteps)):
+            for i in tqdm(range(self.n_step, self.tot_nsteps)):
                 sys.stdout = self.text_trap
                 picmi.warp.step(1)
                 sys.stdout = self.original
@@ -436,10 +454,17 @@ class warp_pyecloud_sim(object):
                 if self.flag_output and self.n_step%self.stride_output == 0:
                     self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax,
                                             self.ecloud.wspecies, self.b_pass)
-                self.n_step += 1
+                # Perform regeneration if needed
+                if self.ecloud.wspecies.getn() > self.N_mp_max:
+                    print('Number of macroparticles: %d'
+                          %(self.ecloud.wspecies.getn()))
+                    print('MAXIMUM LIMIT OF MPS HAS BEEN RACHED')
+                    perform_regeneration(self.N_mp_target,
+                                         self.ecloud.wspecies, self.sec)
 
+                self.n_step += 1
         else:
-            for i in range(self.tot_nsteps):
+            for i in range(self.n_step, self.tot_nsteps):
                 sys.stdout = self.text_trap
                 picmi.warp.step(1)
                 sys.stdout = self.original
@@ -449,45 +474,74 @@ class warp_pyecloud_sim(object):
                 if self.flag_output and self.n_step%self.stride_output == 0:
                     self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax,
                                             self.ecloud.wspecies, self.b_pass)
+                # Perform regeneration if needed
+                if self.ecloud.wspecies.getn() > self.N_mp_max:
+                    print('Number of macroparticles: %d'
+                          %(self.ecloud.wspecies.getn()))
+                    print('MAXIMUM LIMIT OF MPS HAS BEEN RACHED')
+                    perform_regeneration(self.N_mp_target,
+                                         self.ecloud.wspecies, self.sec)
                 self.n_step += 1
 
 
     def init_uniform_density(self):
         pwt = picmi.warp.top
-        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt):
-            chamber = self.chamber
-            lower_bound = chamber.lower_bound
-            upper_bound = chamber.upper_bound
-            init_num_elecs_mp = self.init_num_elecs_mp
-            x0 = random.uniform(lower_bound[0], upper_bound[0],
-                                init_num_elecs_mp)
-            y0 = random.uniform(lower_bound[1], upper_bound[1],
-                                init_num_elecs_mp)
-            z0 = random.uniform(lower_bound[2], upper_bound[2],
-                                init_num_elecs_mp)
-            vx0 = np.zeros(init_num_elecs_mp)
-            vy0 = np.zeros(init_num_elecs_mp)
-            vz0 = np.zeros(init_num_elecs_mp)
-            gi0 = np.ones(init_num_elecs_mp)
-
-            flag_out = chamber.is_outside(x0, y0, z0)
-            Nout = np.sum(flag_out)
-            while Nout>0:
-                x0[flag_out] = random.uniform(lower_bound[0],
-                                              upper_bound[0], Nout)
-                y0[flag_out] = random.uniform(lower_bound[1],
-                                              upper_bound[1], Nout)
-                z0[flag_out] = random.uniform(lower_bound[2],
-                                              upper_bound[2], Nout)
+        comm = MPI.COMM_WORLD
+        init_num_elecs_mp = self.init_num_elecs_mp
+        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt) and (pwt.time - self.t_inject_elec) > 0:
+            if picmi.warp.me == 0:
+                chamber = self.chamber
+                lower_bound = chamber.lower_bound
+                upper_bound = chamber.upper_bound
+                x0 = random.uniform(lower_bound[0], upper_bound[0],
+                                    init_num_elecs_mp)
+                y0 = random.uniform(lower_bound[1], upper_bound[1],
+                                    init_num_elecs_mp)
+                z0 = random.uniform(lower_bound[2], upper_bound[2],
+                                    init_num_elecs_mp)
+                vx0 = np.zeros(init_num_elecs_mp)
+                vy0 = np.zeros(init_num_elecs_mp)
+                vz0 = np.zeros(init_num_elecs_mp)
+                gi0 = np.ones(init_num_elecs_mp)
 
                 flag_out = chamber.is_outside(x0, y0, z0)
                 Nout = np.sum(flag_out)
-                
-            w0 = float(self.init_num_elecs)/float(init_num_elecs_mp)         
+                while Nout>0:
+                    x0[flag_out] = random.uniform(lower_bound[0],
+                                                  upper_bound[0], Nout)
+                    y0[flag_out] = random.uniform(lower_bound[1],
+                                                  upper_bound[1], Nout)
+                    z0[flag_out] = random.uniform(lower_bound[2],
+                                                  upper_bound[2], Nout)
 
+                    flag_out = chamber.is_outside(x0, y0, z0)
+                    Nout = np.sum(flag_out)
+                    
+            
+            if picmi.warp.me!=0:
+                x0 = np.empty(init_num_elecs_mp, dtype = float)             
+                y0 = np.empty(init_num_elecs_mp, dtype = float)             
+                z0 = np.empty(init_num_elecs_mp, dtype = float)             
+                vx0 = np.empty(init_num_elecs_mp, dtype = float)             
+                vy0 = np.empty(init_num_elecs_mp, dtype = float)             
+                vz0 = np.empty(init_num_elecs_mp, dtype = float)            
+                gi0 = np.empty(init_num_elecs_mp, dtype = float)
+             
+            comm = MPI.COMM_WORLD
+
+            comm.Bcast(x0, root=0)
+            comm.Bcast(y0, root=0)
+            comm.Bcast(z0, root=0)
+            comm.Bcast(vx0, root=0)
+            comm.Bcast(vy0, root=0)
+            comm.Bcast(vz0, root=0)
+            comm.Bcast(gi0, root=0)
+
+            w0 = float(self.init_num_elecs)/float(init_num_elecs_mp)         
             self.ecloud.wspecies.addparticles(x = x0, y = y0, z = z0, vx = vx0,
                                               vy = vy0, vz = vz0, gi = gi0,
                                               w = w0)
+            print('injected %d MPs' %self.ecloud.wspecies.getn())
 
     def load_elec_density(self):
         print('#############################################################')
