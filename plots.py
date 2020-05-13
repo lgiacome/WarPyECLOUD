@@ -4,7 +4,7 @@ import matplotlib as mpl
 from warp import picmi
 import os
 
-def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber):
+def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber, images_dir = 'images_cavity'):
     pw = picmi.warp
     fig = plt.figure( figsize=(7,7))
     xmin = chamber.xmin
@@ -104,20 +104,19 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber):
     #ax.set_ylabel('y')
     fig.subplots_adjust(left = 0.15, right=0.8, hspace = 0.4, wspace = 0.4)
     fig.colorbar(im, cax=cbar_ax)
-    fig.suptitle('Ey, t = %1.6e' %pw.top.time )
+    fig.suptitle(ffstr + ', t = %1.6e' %pw.top.time )
     #fig.tight_layout()
-    if not os.path.exists('images_cavity/'):
-        os.mkdir('images_cavity/')
-    if not os.path.exists('images_cavity/' + ffstr):
-        os.mkdir('images_cavity/' + ffstr)
-        print(os.getcwd())
-    filename = 'images_cavity/' + ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
+    if not os.path.exists(images_dir):
+        os.mkdir(images_dir)
+    if not os.path.exists(images_dir + '/' + ffstr):
+        os.mkdir(images_dir + '/' + ffstr)
+    filename = images_dir +'/'+ ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
     plt.savefig(filename, dpi=150)
     plt.close(fig)
 
 def plot_density(self, l_force=0):
     chamber = self.chamber
-    if l_force or self.n_step%self.stride_imgs == 0:
+    if l_force or picmi.warp.top.it%self.stride_imgs == 0:
         (Nx, Ny, Nz) = np.shape(self.ecloud.wspecies.get_density())
         fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
         fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
