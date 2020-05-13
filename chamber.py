@@ -317,4 +317,33 @@ class CrabCavityWaveguide:
         
         return np.logical_or.reduce([flag_out_box, flag_out_poles, 
                                      flag_out_left, flag_out_right])
-    
+
+class Triangulation:
+    def __init__(self, filename, ghost_x = 1e-3, ghost_y = 1e-3, ghost_z = 1e-3, 
+                 condid = 1):
+        import meshio
+        mesh = meshio.read(filename, file_format="gmsh")
+        points = self.points = mesh.points
+        triangles2points = mesh.cells_dict['triangle']
+        Ntri = np.shape(triangles2points)[0]
+        triangles = points[triangles2points].transpose(2,1,0)
+
+        self.xmin = np.min(points[:,0]) - ghost_x
+        self.xmax = np.max(points[:,0]) + ghost_x
+        self.ymin = np.min(points[:,1]) - ghost_y
+        self.ymax = np.max(points[:,1]) + ghost_y
+        self.zmin = np.min(points[:,2]) - ghost_z
+        self.zmax = np.max(points[:,2]) + ghost_z
+
+        tri = picmi.warp.Triangles(triangles, condid = condid)
+
+        self.conductors = tri
+
+        self.lower_bound = [np.min(points[:,0]), np.min(points[:,1]), np.min(points[:,2])]
+        self.upper_bound = [np.max(points[:,0]), np.max(points[:,1]), np.max(points[:,2])]    
+
+
+    def is_outside(self, xx, yy, zz):
+        return False
+
+ 

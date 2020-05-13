@@ -136,7 +136,7 @@ class warp_pyecloud_sim(object):
 
         self.bunch_rms_size = [self.sigmax, self.sigmay, self.sigmaz]
         self.bunch_rms_velocity = [0., 0., 0.]
-        self.bunch_centroid_position = [0, 0, self.chamber.zmin + 1e-4]
+        self.bunch_centroid_position = [0, 0, self.chamber.lower_bound[2]+1e-4]
         self.bunch_centroid_velocity = [0.,0., self.beam_beta*picmi.constants.c]
         
         self.species_names = ['beam', 'Ecloud']
@@ -150,7 +150,7 @@ class warp_pyecloud_sim(object):
         if self.flag_checkpointing and os.path.exists(self.temps_filename): 
             self.ecloud = picmi.Species(particle_type = 'electron',
                                         particle_shape = 'linear',
-                                        name = self.pecies_names[1],
+                                        name = self.species_names[1],
                                 initial_distribution = self.load_elec_density())
         else:
             self.ecloud = picmi.Species(particle_type = 'electron',
@@ -428,7 +428,6 @@ class warp_pyecloud_sim(object):
             if self.flag_output:
                 self.saver.update_outputs(self.ecloud.wspecies, self.nz,
                                           self.n_step) 
-            self.n_step += 1
 
             if self.n_step > self.tot_nsteps:
                 # Timer
@@ -517,7 +516,6 @@ class warp_pyecloud_sim(object):
                     flag_out = chamber.is_outside(x0, y0, z0)
                     Nout = np.sum(flag_out)
                     
-            
             if picmi.warp.me!=0:
                 x0 = np.empty(init_num_elecs_mp, dtype = float)             
                 y0 = np.empty(init_num_elecs_mp, dtype = float)             
