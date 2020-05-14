@@ -291,9 +291,9 @@ class CrabCavityWaveguide:
         self.lower_bound = [-self.l_main_x/2, -self.l_main_y/2, -self.l_main_z/2]
 
     def is_outside(self, xx,yy,zz):
-        flag_out_box = np.logical_and.reduce([abs(xx) > self.l_main_x/2, 
-                                              abs(yy) > self.l_main_y/2,
-                                              abs(zz) > self.l_main_z/2])
+        flag_in_box = np.logical_and.reduce([abs(xx) < self.l_main_x/2, 
+                                              abs(yy) < self.l_main_y/2,
+                                              abs(zz) < self.l_main_z/2])
 
         flag_out_poles = np.logical_and.reduce([abs(xx) < self.l_main_int_x,
                                                 abs(zz) < self.l_main_int_z,
@@ -302,21 +302,19 @@ class CrabCavityWaveguide:
         ze_pipe_left = -self.l_main_z/2
         zs_pipe_right = self.l_main_z/2
         ze_pipe_right = self.z_end
-        flag_out_pipe_l = np.logical_and.reduce([ abs(xx) > self.l_beam_pipe,
-                                                  abs(yy) > self.l_beam_pipe,
-                                                  zz < zs_pipe_left,
-                                                  zz > ze_pipe_left])
-        flag_out_pipe_r = np.logical_and.reduce([ abs(xx) > self.l_beam_pipe,
-                                                  abs(yy) > self.l_beam_pipe,
-                                                  zz < zs_pipe_right,
-                                                  zz > ze_pipe_right])
+        flag_in_pipe_l = np.logical_and.reduce([ abs(xx) < self.l_beam_pipe,
+                                                  abs(yy) < self.l_beam_pipe,
+                                                  zz > zs_pipe_left,
+                                                  zz < ze_pipe_left])
+        flag_in_pipe_r = np.logical_and.reduce([ abs(xx) < self.l_beam_pipe,
+                                                  abs(yy) < self.l_beam_pipe,
+                                                  zz > zs_pipe_right,
+                                                  zz < ze_pipe_right])
 
+        flag_in_core = np.logical_and.reduce([flag_in_box,np.logical_not(flag_out_poles)])
 
-        flag_out_left = np.logical_and(flag_out_box,flag_out_pipe_l)
-        flag_out_right = np.logical_and(flag_out_box, flag_out_pipe_r)
-        
-        return np.logical_or.reduce([flag_out_box, flag_out_poles, 
-                                     flag_out_left, flag_out_right])
+        return np.logical_not(np.logical_or.reduce([flag_in_core, flag_in_pipe_r,
+                                     flag_in_pipe_l]))
 
 class Triangulation:
     def __init__(self, filename, ghost_x = 1e-3, ghost_y = 1e-3, ghost_z = 1e-3, 
