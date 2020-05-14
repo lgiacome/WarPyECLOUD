@@ -327,7 +327,7 @@ class warp_pyecloud_sim(object):
         # Setup secondary emission stuff       
         pp = ParticleScraper(sim.conductors, lsavecondid = 1,
                                   lsaveintercept = 1,lcollectlpdata = 1)
-
+        
         self.sec = Secondaries(conductors = sim.conductors, l_usenew = 1,
                              pyecloud_secemi_object = self.sey_mod,
                              pyecloud_nel_mp_ref = self.pyecloud_nel_mp_ref,
@@ -460,7 +460,7 @@ class warp_pyecloud_sim(object):
                     print('MAXIMUM LIMIT OF MPS HAS BEEN RACHED')
                     perform_regeneration(self.N_mp_target,
                                          self.ecloud.wspecies, self.sec)
-
+                
                 self.n_step += 1
         else:
             for i in range(self.n_step, self.tot_nsteps):
@@ -480,8 +480,8 @@ class warp_pyecloud_sim(object):
                     print('MAXIMUM LIMIT OF MPS HAS BEEN RACHED')
                     perform_regeneration(self.N_mp_target,
                                          self.ecloud.wspecies, self.sec)
+                
                 self.n_step += 1
-
 
     def init_uniform_density(self):
         pwt = picmi.warp.top
@@ -539,6 +539,7 @@ class warp_pyecloud_sim(object):
             self.ecloud.wspecies.addparticles(x = x0, y = y0, z = z0, vx = vx0,
                                               vy = vy0, vz = vz0, gi = gi0,
                                               w = w0)
+            print('injected %d electrons' %np.sum(self.ecloud.wspecies.getw()))
             print('injected %d MPs' %self.ecloud.wspecies.getn())
 
     def load_elec_density(self):
