@@ -27,13 +27,7 @@ from mpi4py import MPI
 class warp_pyecloud_sim(object):
     __fieldsolver_inputs__ = {'nx': None, 'ny': None, 'nz': None,
                               'solver_type': 'ES', 'N_subcycle': None,
-                              'EM_method': 'Yee', 'cfl': 1.0, 'dt': None,
-                              'main_solver_species': None,
-                              'secondary_solver_type': None,
-                              'secondary_solver_species': None,
-                              'secondary_EM_method': None,
-                              'secondary_cfl': None
-                              }
+                              'EM_method': 'Yee', 'cfl': 1.0, 'dt': None}
 
     __beam_inputs__ = {'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
                        'sigmax': None, 'sigmay': None, 'sigmat': None,
@@ -116,7 +110,7 @@ class warp_pyecloud_sim(object):
         else:
             self.time_prof = self.self_wrapped_custom_time_prof
 
-        if self.solver_type == 'EM' or self.secondary_solver_type == 'EM':
+        if self.solver_type == 'EM':
             if self.dt is not None:
                 print('WARNING: dt is going to be ignored for the EM solver')
         else:
@@ -173,7 +167,7 @@ class warp_pyecloud_sim(object):
                                             lower_boundary_conditions=self.dir_bc,
                                             upper_boundary_conditions=self.dir_bc)
 
-            self.solver = picmi.ElectrostaticSolver(grid=grid_ES, warp_deposition_species=main_species_obj)
+            self.solver = picmi.ElectrostaticSolver(grid=grid_ES)
 
         elif self.solver_type == 'EM':
             grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
@@ -308,7 +302,6 @@ class warp_pyecloud_sim(object):
         self.original = sys.stdout
 
     def add_es_solver(self):
-
         grid_ES = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
                                         lower_bound=self.lower_bound,
                                         upper_bound=self.upper_bound,
@@ -322,7 +315,6 @@ class warp_pyecloud_sim(object):
         self.ES_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
 
     def add_em_solver(self):
-
         grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
                                         lower_bound=self.lower_bound,
                                         upper_bound=self.upper_bound,
@@ -350,13 +342,28 @@ class warp_pyecloud_sim(object):
         registersolver(self.EM_solver.solver)
         self.EM_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
 
-    def distribute_species(self, primary_species=None, es_species=None, em_species=None):
+    def add_ms_solver(self):
+        grid_MS = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
+                                        lower_bound=self.lower_bound,
+                                        upper_bound=self.upper_bound,
+                                        lower_boundary_conditions=self.dir_bc,
+                                        upper_boundary_conditions=self.dir_bc)
+
+        self.MS_solver = picmi.MagnetosticSolver(grid=grid_ES)
+
+        self.MS_solver.initialize_solver_inputs()
+        registersolver(self.MS_solver.solver)
+        self.MS_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
+
+    def distribute_species(self, primary_species=None, es_species=None, em_species=None, ms_species=None):
         if primary_species is not None:
             self.solver.solver.deposition_species = primary_species
         if es_species is not None:
             self.ES_solver.solver.deposition_species = es_species
         if em_species is not None:
             self.EM_solver.solver.solver.deposition_species = em_species
+        if ms_species is not None:
+            self.MS_solver.solver.solver.deposition_species = ms_species
 
     def self_wrapped_probe_fun_i(self):
         self.saver.field_probe(self.ind_probe, self.pos_probe)
