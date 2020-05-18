@@ -213,7 +213,7 @@ class CrabCavity:
 class CrabCavityWaveguide:
 
     def __init__(self, z_start, z_end,  disp = 0, ghost_x = 10e-3, ghost_y = 10e-3,
-                 ghost_z = 0., condid = 1):
+                 ghost_z = 1e-3, condid = 1):
 
         print('Simulating ECLOUD in a consistent crab cavity')
 

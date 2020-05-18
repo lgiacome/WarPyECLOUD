@@ -131,7 +131,7 @@ class warp_pyecloud_sim(object):
 
         self.bunch_rms_size = [self.sigmax, self.sigmay, self.sigmaz]
         self.bunch_rms_velocity = [0., 0., 0.]
-        self.bunch_centroid_position = [0, 0, self.chamber.lower_bound[2] + 1e-4]
+        self.bunch_centroid_position = [0, 0, self.chamber.zmin + self.chamber.ghost_z]
         self.bunch_centroid_velocity = [0., 0., self.beam_beta * picmi.constants.c]
 
         self.species_names = ['beam', 'ecloud']
