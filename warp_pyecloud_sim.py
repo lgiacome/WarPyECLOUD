@@ -57,7 +57,8 @@ class warp_pyecloud_sim(object):
                          'stride_output': 1000,
                          'temps_filename': 'temp_mps_info.h5',
                          'custom_plot': None, 'images_dir': None,
-                         'field_probes': [], 'field_probes_dump_stride': 100
+                         'field_probes': [], 'field_probes_dump_stride': 100,
+                         'probe_filename': 'probe.h5'
                          }
 
     __simulation_inputs__ = {'enable_trap': True,
@@ -133,7 +134,7 @@ class warp_pyecloud_sim(object):
         self.bunch_centroid_position = [0, 0, self.chamber.lower_bound[2] + 1e-4]
         self.bunch_centroid_velocity = [0., 0., self.beam_beta * picmi.constants.c]
 
-        self.species_names = ['beam', 'Ecloud']
+        self.species_names = ['beam', 'ecloud']
 
         # Instantiate beam
         self.beam = picmi.Species(particle_type='proton',
@@ -216,25 +217,27 @@ class warp_pyecloud_sim(object):
 
         self.sim.add_species(self.ecloud, layout=self.ecloud_layout,
                         initialize_self_field=False)
-
+        
         if self.bunch_macro_particles > 0:
             picmi.warp.installuserinjection(self.bunched_beam)
 
         if self.init_num_elecs_mp > 0:
             picmi.warp.installuserinjection(self.init_uniform_density)
+        
         self.sim.step(1)
-
+        
         # if self.tot_nsteps is None and self.n_bunches is not None:
         #    self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
         if self.tot_nsteps is None and self.t_end is not None:
             self.tot_nsteps = int(np.round(self.t_end / top.dt))
         elif self.tot_nsteps is None and self.n_bunches is None:
             raise Exception('One between n_bunches, tot_nsteps, t_end has to be specified')
-
+        
         self.saver = Saver(self.flag_output, self.flag_checkpointing,
                            self.tot_nsteps, self.n_bunches, self.nbins,
                            self.solver, temps_filename=self.temps_filename,
-                           output_filename=self.output_filename)
+                           output_filename=self.output_filename,
+                           probe_filename = self.probe_filename)
 
         self.solver.solver.installconductor(self.sim.conductors,
                                             dfill=picmi.warp.largepos)
@@ -301,20 +304,20 @@ class warp_pyecloud_sim(object):
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
         self.original = sys.stdout
 
-    def add_es_solver(self):
+    def add_es_solver(self, deposition_species = []):
         grid_ES = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
                                         lower_bound=self.lower_bound,
                                         upper_bound=self.upper_bound,
                                         lower_boundary_conditions=self.dir_bc,
                                         upper_boundary_conditions=self.dir_bc)
 
-        self.ES_solver = picmi.ElectrostaticSolver(grid=grid_ES)
+        self.ES_solver = picmi.ElectrostaticSolver(grid=grid_ES, warp_deposition_species=deposition_species)
 
         self.ES_solver.initialize_solver_inputs()
         registersolver(self.ES_solver.solver)
         self.ES_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
 
-    def add_em_solver(self):
+    def add_em_solver(self, deposition_species = []):
         grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
                                         lower_bound=self.lower_bound,
                                         upper_bound=self.upper_bound,
@@ -336,20 +339,21 @@ class warp_pyecloud_sim(object):
                                                      warp_l_correct_num_Cherenkov=False,
                                                      warp_type_rz_depose=0,
                                                      warp_l_setcowancoefs=True,
-                                                     warp_l_getrho=False)
+                                                     warp_l_getrho=Falsei,
+                                                     warp_deposition_species=deposition_species)
 
         self.EM_solver.initialize_solver_inputs()
         registersolver(self.EM_solver.solver)
         self.EM_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
 
-    def add_ms_solver(self):
+    def add_ms_solver(self, deposition_species = []):
         grid_MS = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
                                         lower_bound=self.lower_bound,
                                         upper_bound=self.upper_bound,
                                         lower_boundary_conditions=self.dir_bc,
                                         upper_boundary_conditions=self.dir_bc)
 
-        self.MS_solver = picmi.MagnetosticSolver(grid=grid_ES)
+        self.MS_solver = picmi.MagnetostaticSolver(grid=grid_MS, warp_deposition_species=deposition_species)
 
         self.MS_solver.initialize_solver_inputs()
         registersolver(self.MS_solver.solver)
@@ -361,9 +365,9 @@ class warp_pyecloud_sim(object):
         if es_species is not None:
             self.ES_solver.solver.deposition_species = es_species
         if em_species is not None:
-            self.EM_solver.solver.solver.deposition_species = em_species
+            self.EM_solver.solver.deposition_species = em_species
         if ms_species is not None:
-            self.MS_solver.solver.solver.deposition_species = ms_species
+            self.MS_solver.solver.deposition_species = ms_species
 
     def self_wrapped_probe_fun_i(self):
         self.saver.field_probe(self.ind_probe, self.pos_probe)
