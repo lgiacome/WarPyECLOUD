@@ -13,7 +13,6 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber, 
     ymax = chamber.ymax
     zmin = chamber.zmin
     zmax = chamber.zmax
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     cmap = mpl.cm.jet
     Nx, Ny, Nz = np.shape(ff)
     ey00 = ff[:,:,k_antenna]
@@ -102,9 +101,10 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber, 
     #im = ax.imshow(laser_func_mat, cmap = cmap, vmin=mine,vmax = maxe, extent=[ -width/2, width/2,-height/2, height/2])
     #ax.set_xlabel('x')
     #ax.set_ylabel('y')
-    fig.subplots_adjust(left = 0.15, right=0.8, hspace = 0.4, wspace = 0.4)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7]) #[0.8, -0.3, 0.03, 1.8])
     fig.colorbar(im, cax=cbar_ax)
     fig.suptitle(ffstr + ', t = %1.6e' %pw.top.time )
+    fig.subplots_adjust(left = 0.15, right=0.8, hspace = 0.4, wspace = 0.4)
     #fig.tight_layout()
     if not os.path.exists(images_dir):
         os.mkdir(images_dir)
