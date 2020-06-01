@@ -233,12 +233,6 @@ class warp_pyecloud_sim(object):
         elif self.tot_nsteps is None and self.n_bunches is None:
             raise Exception('One between n_bunches, tot_nsteps, t_end has to be specified')
         
-        self.saver = Saver(self.flag_output, self.flag_checkpointing,
-                           self.tot_nsteps, self.n_bunches, self.nbins,
-                           self.solver, temps_filename=self.temps_filename,
-                           output_filename=self.output_filename,
-                           probe_filename = self.probe_filename)
-
         self.solver.solver.installconductor(self.sim.conductors,
                                             dfill=picmi.warp.largepos)
 
@@ -272,6 +266,13 @@ class warp_pyecloud_sim(object):
         self.sec.add(incident_species=self.ecloud.wspecies,
                      emitted_species=self.ecloud.wspecies,
                      conductor=self.sim.conductors)
+
+        self.saver = Saver(self.flag_output, self.flag_checkpointing,
+                           self.tot_nsteps, self.n_bunches, self.nbins,
+                           self.solver, self.sec, temps_filename=self.temps_filename,
+                           output_filename=self.output_filename,
+                           probe_filename = self.probe_filename)
+
 
         self.ntsteps_p_bunch = int(np.round(self.b_spac / top.dt))
         self.n_step = int(np.round(self.b_pass * self.ntsteps_p_bunch))

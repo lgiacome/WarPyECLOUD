@@ -7,7 +7,7 @@ from warp import picmi
 class Saver:
 
     def __init__(self, flag_output, flag_checkpointing, tot_nsteps, n_bunches,
-                 nbins, solver, output_filename= None, temps_filename = None, probe_filename = 'probe.h5'):
+                 nbins, solver, sec, output_filename= None, temps_filename = None, probe_filename = 'probe.h5'):
         self.flag_checkpointing = flag_checkpointing
         self.flag_output = flag_output
         self.temps_filename = temps_filename
@@ -22,6 +22,7 @@ class Saver:
                 self.init_empty_outputs()
             else:
                 self.restore_outputs_from_file()
+        self.sec = sec
 
     def init_empty_outputs(self):
         self.numelecs = np.zeros(self.tot_nsteps)
@@ -30,6 +31,8 @@ class Saver:
         if self.n_bunches is not None:
             self.xhist = np.zeros((self.n_bunches,self.nbins))
         self.bins = np.zeros(self.nbins)
+        self.tt = np.zeros(self.tot_nsteps)
+        self.prev_len = 0
 
     def restore_outputs_from_file(self):
         dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
@@ -77,6 +80,7 @@ class Saver:
         self.numelecs[n_step] = np.sum(elecs_density)
         self.numelecs_tot[n_step] = np.sum(elecs_density_tot)
         self.N_mp[n_step] = len(elecb_w)
+        self.tt[n_step] = picmi.warp.top.time
 
     def dump_outputs(self, xmin, xmax, elecbw, b_pass):
         dict_out = {}
@@ -92,8 +96,12 @@ class Saver:
                                                      density = False)
         dict_out['bins'] = self.bins
         dict_out['xhist'] = self.xhist
+        dict_out['tt'] = self.tt
+        dict_out['costhav'] = self.sec.costhav
+        dict_out['ek0av'] = self.sec.ek0av
+        dict_out['t_imp'] = self.sec.htime
         dict_to_h5(dict_out, self.output_filename)
-
+        
     def dump_em_fields(em, folder, filename):
         if not os.path.exists(folder+'/'+str(picmi.warp.me)):
             os.makedirs(folder+'/'+str(picmi.warp.me))
