@@ -139,7 +139,7 @@ class warp_pyecloud_sim(object):
         # Instantiate beam
         self.beam = picmi.Species(particle_type='proton',
                                   particle_shape='linear',
-                                  name=self.species_names[0])
+                                  name=self.species_names[0], fselfb = self.bunch_centroid_velocity[2])
         self.flag_first_pass = True
 
         if self.flag_checkpointing and os.path.exists(self.temps_filename):
@@ -152,7 +152,6 @@ class warp_pyecloud_sim(object):
                                         particle_shape='linear',
                                         name=self.species_names[1])
             self.b_pass = 0
-
         # Setup grid and boundary conditions
         self.dir_bc = ['dirichlet', 'dirichlet', 'dirichlet']
         self.pml_bc = ['open', 'open', 'open']
@@ -340,7 +339,7 @@ class warp_pyecloud_sim(object):
                                                      warp_l_correct_num_Cherenkov=False,
                                                      warp_type_rz_depose=0,
                                                      warp_l_setcowancoefs=True,
-                                                     warp_l_getrho=Falsei,
+                                                     warp_l_getrho=False,
                                                      warp_deposition_species=deposition_species)
 
         self.EM_solver.initialize_solver_inputs()
