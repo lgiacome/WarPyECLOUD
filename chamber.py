@@ -120,8 +120,49 @@ class CircChamber:
         self.conductors = pipe
 
     def is_outside(self, xx, yy, zz):
-        r0_sq = np.square(x0) + np.square(y0)
+        r0_sq = np.square(xx) + np.square(yy)
         return np.logical_or.reduce([r0sq > self.radius**2,
+                                     zz < z_start, zz > z_end])
+
+class EllipChamber:
+
+    def __init__(self, r_x, r_y, z_start, z_end, ghost_x = 1e-3, ghost_y = 1e-3,
+                 ghost_z = 1e-3, condid = 1):
+
+        print('Using a circular chamber with radius %1.2e' %radius)
+
+        self.r_x = r_x
+        self.r_y = r_y
+        self.z_start = z_start
+        self.z_end = z_end
+        self.length = z_end - z_start
+        self.ghost_x = ghost_x
+        self.ghost_y = ghost_y
+        self.ghost_z = ghost_z
+
+        self.xmin = -self.r_x - ghost_x
+        self.xmax = -self.xmin
+        self.ymin = -self.r_y - ghost_y
+        self.ymax = -self.ymin
+        self.zmin = z_start - ghost_z
+        self.zmax = z_end + ghost_z
+
+        self.lower_bound = [-self.r_x, -self.r_y, z_start]
+        self.upper_bound = [self.r_x, self.r_y, z_end]
+        self.ellipticity = (self.r_x - self.r_y)/self.r_x
+        self.zcent = (z_start + z_end)/2
+        pipe = picmi.warp.ZCylinderEllipticOut(ellipticity = self.ellipticity, 
+                                               radius = self.r_x, 
+                                               length = self.length,
+                                               z_cent = self.zcent,
+                                               condid = condid)
+
+
+        self.conductors = pipe
+
+    def is_outside(self, xx, yy, zz):
+        r0_sq = np.square(xx/self.r_x) + np.square(yy/self.r_y)
+        return np.logical_or.reduce([r0sq > 1,
                                      zz < z_start, zz > z_end])
 
 class CrabCavity:
@@ -243,10 +284,12 @@ class CrabCavityWaveguide:
 
         box1 = picmi.warp.Box(zsize = self.zmax - self.zmin,
                               xsize = self.xmax - self.xmin,
-                              ysize = self.ymax - self.ymin, condid = condid)
+                              ysize = self.ymax - self.ymin, condid = condid,
+                              zcent = 0.5*(self.zmax + self.zmin))
         box2 = picmi.warp.Box(zsize = self.zmax - self.zmin,
                               xsize = self.l_beam_pipe, 
-                              ysize = self.l_beam_pipe, condid = condid)
+                              ysize = self.l_beam_pipe, condid = condid,
+                              zcent = 0.5*(self.zmax + self.zmin))
         box3 = picmi.warp.Box(zsize = self.l_main_z,
                               xsize = self.l_main_x,
                               ysize= self.l_main_y, condid = condid)
@@ -289,6 +332,8 @@ class CrabCavityWaveguide:
 
         self.upper_bound = [self.l_main_x/2, self.l_main_y/2, self.l_main_z/2]
         self.lower_bound = [-self.l_main_x/2, -self.l_main_y/2, -self.l_main_z/2]
+        #self.upper_bound = [self.l_main_int_x, self.l_main_int_y, self.l_main_int_z]
+        #self.lower_bound = [-self.l_main_int_x, -self.l_main_int_y, -self.l_main_int_z]
 
     def is_outside(self, xx,yy,zz):
         flag_in_box = np.logical_and.reduce([abs(xx) < self.l_main_x/2, 
@@ -343,5 +388,4 @@ class Triangulation:
 
     def is_outside(self, xx, yy, zz):
         return False
-
  
