@@ -129,7 +129,7 @@ class EllipChamber:
     def __init__(self, r_x, r_y, z_start, z_end, ghost_x = 1e-3, ghost_y = 1e-3,
                  ghost_z = 1e-3, condid = 1):
 
-        print('Using a circular chamber with radius %1.2e' %radius)
+        print('Using an elliptic chamber chamber with r_x %1.2e and r_y %1.2e' %(r_x,r_y))
 
         self.r_x = r_x
         self.r_y = r_y
