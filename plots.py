@@ -114,38 +114,41 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber, 
     plt.savefig(filename, dpi=150)
     plt.close(fig)
 
-def plot_density(self, l_force=0):
-    chamber = self.chamber
-    if l_force or picmi.warp.top.it%self.stride_imgs == 0:
-        (Nx, Ny, Nz) = np.shape(self.ecloud.wspecies.get_density())
-        fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
-        fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
-                            top = 0.94, wspace = 0.15)
-        d = (self.ecloud.wspecies.get_density()
-           + self.beam.wspecies.get_density())
-        d2  = (self.ecloud.wspecies.get_density())
-        im1 = axs[0].imshow(d[:, :, int(Nz/2)] .T, cmap = 'jet', 
-                            origin = 'lower',
-                            vmin = 0.2*np.min(d2[:, :, int(Nz/2)]),
-                            vmax = 0.8*np.max(d2[:, :, int(Nz/2)]),
-                            extent = [chamber.xmin, chamber.xmax ,
-                                      chamber.ymin, chamber.ymax])
-        axs[0].set_xlabel('x [m]')
-        axs[0].set_ylabel('y [m]')
-        axs[0].set_title('e- density')
-        fig.colorbar(im1, ax = axs[0])
-        im2 = axs[1].imshow(d[int(Nx/2), :, :], cmap = 'jet', 
-                            origin = 'lower', 
-                            vmin = 0.2*np.min(d2[int(Nx/2), :, :]), 
-                            vmax = 0.8*np.max(d2[int(Nx/2), :, :]),
-                            extent=[chamber.zmin, chamber.zmax, 
-                                    chamber.ymin, chamber.ymax], 
-                            aspect = 'auto')
-        axs[1].set_xlabel('z [m]')
-        axs[1].set_ylabel('y [m]')
-        axs[1].set_title('e- density')
-        fig.colorbar(im2, ax = axs[1])
-
-        figname = self.images_dir + '/%d.png' %int(self.n_step)
-        plt.savefig(figname)
-        plt.close(fig)
+def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
+    (Nx, Ny, Nz) = np.shape(ff)
+    pw = picmi.warp
+    fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
+    fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
+                        top = 0.94, wspace = 0.15)
+    #d = (self.ecloud.wspecies.get_density()
+    #   + self.beam.wspecies.get_density())
+    #d2  = (self.ecloud.wspecies.get_density())
+    im1 = axs[0].imshow(ff[:, :, int(Nz/2)] .T, cmap = 'jet', 
+                        origin = 'lower',
+                        vmin = mine,
+                        vmax = maxe,
+                        extent = [chamber.xmin, chamber.xmax ,
+                                  chamber.ymin, chamber.ymax])
+    axs[0].set_xlabel('x [m]')
+    axs[0].set_ylabel('y [m]')
+    axs[0].set_title(ffstr)
+    fig.colorbar(im1, ax = axs[0])
+    im2 = axs[1].imshow(ff[int(Nx/2), :, :], cmap = 'jet', 
+                        origin = 'lower', 
+                        vmin = mine, 
+                        vmax = maxe,
+                        extent=[chamber.zmin, chamber.zmax, 
+                                chamber.ymin, chamber.ymax], 
+                        aspect = 'auto')
+    axs[1].set_xlabel('z [m]')
+    axs[1].set_ylabel('y [m]')
+    axs[1].set_title(ffstr)
+    if not os.path.exists(images_dir):
+        os.mkdir(images_dir)
+    if not os.path.exists(images_dir + '/' + ffstr):
+        os.mkdir(images_dir + '/' + ffstr)
+    fig.colorbar(im2, ax = axs[1])
+    figname = images_dir +'/'+ ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
+    #figname = self.images_dir + '/%d.png' %int(self.n_step)
+    plt.savefig(figname)
+    plt.close(fig)
