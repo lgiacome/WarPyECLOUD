@@ -267,10 +267,11 @@ class warp_pyecloud_sim(object):
                      conductor=self.sim.conductors)
 
         self.saver = Saver(self.flag_output, self.flag_checkpointing,
-                           self.tot_nsteps, self.n_bunches, self.nbins,
+                           self.nbins,
                            self.solver, self.sec, temps_filename=self.temps_filename,
                            output_filename=self.output_filename,
-                           probe_filename = self.probe_filename)
+                           probe_filename = self.probe_filename,
+                           tot_nsteps = self.tot_nsteps, n_bunches = self.n_bunches)
 
 
         self.ntsteps_p_bunch = int(np.round(self.b_spac / top.dt))
@@ -287,10 +288,7 @@ class warp_pyecloud_sim(object):
                                          self.tot_nsteps,
                                          self.field_probes_dump_stride)
 
-            for i, pos_probe in enumerate(self.field_probes):
-                self.pos_probe = pos_probe
-                self.ind_probe = i
-                pw.installafterstep(self.self_wrapped_probe_fun_i)
+            pw.installafterstep(self.self_wrapped_probe_fun)
 
         # Install other user-specified functions
         for fun in self.after_step_fun_list:
@@ -369,8 +367,8 @@ class warp_pyecloud_sim(object):
         if ms_species is not None:
             self.MS_solver.solver.deposition_species = ms_species
 
-    def self_wrapped_probe_fun_i(self):
-        self.saver.field_probe(self.ind_probe, self.pos_probe)
+    def self_wrapped_probe_fun(self):
+        self.saver.update_field_probes(self.field_probes)
 
     def step(self, u_steps=1):
         for u_step in range(u_steps):

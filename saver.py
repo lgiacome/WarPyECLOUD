@@ -1,13 +1,13 @@
 import numpy as np
 import os
 from h5py_manager import dict_of_arrays_and_scalar_from_h5, dict_to_h5, dict_to_h5_serial
-from warp import *
+from warp import AppendableArray
 from warp import picmi
 
 class Saver:
 
-    def __init__(self, flag_output, flag_checkpointing, tot_nsteps, n_bunches,
-                 nbins, solver, sec, output_filename= None, temps_filename = None, probe_filename = 'probe.h5'):
+    def __init__(self, flag_output, flag_checkpointing,
+                 nbins, solver, sec, output_filename= None, temps_filename = None, probe_filename = 'probe.h5', tot_nsteps = 1, n_bunches = 1):
         self.flag_checkpointing = flag_checkpointing
         self.flag_output = flag_output
         self.temps_filename = temps_filename
@@ -18,31 +18,30 @@ class Saver:
         self.solver = solver
         self.probe_filename = probe_filename
         if self.flag_output:
-            if not self.flag_checkpointing or not os.path.exists(self.temps_filename):
-                self.init_empty_outputs()
-            else:
+            self.init_empty_outputs(tot_nsteps, n_bunches)
+            if os.path.exists(self.temps_filename):
                 self.restore_outputs_from_file()
         self.sec = sec
 
-    def init_empty_outputs(self):
-        self.numelecs = np.zeros(self.tot_nsteps)
-        self.numelecs_tot = np.zeros(self.tot_nsteps)
-        self.N_mp = np.zeros(self.tot_nsteps)
+    def init_empty_outputs(self, tot_nsteps = 1, n_bunches = 1):
+        self.numelecs = AppendableArray(initlen = tot_nsteps, typecode='d')
+        self.numelecs_tot = AppendableArray(initlen = tot_nsteps, typecode='d')
+        self.N_mp = AppendableArray(initlen = tot_nsteps, typecode='d')
         if self.n_bunches is not None:
-            self.xhist = np.zeros((self.n_bunches,self.nbins))
+            self.xhist = AppendableArray(initlen = n_bunches, typecode = 'd', unitshape = (1,self.nbins))
         self.bins = np.zeros(self.nbins)
-        self.tt = np.zeros(self.tot_nsteps)
-        self.prev_len = 0
+        self.tt = AppendableArray(initlen = tot_nsteps, typecode='d')
 
     def restore_outputs_from_file(self):
         dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
         if self.flag_output:
-            self.numelecs = dict_init_dist['numelecs']
-            self.N_mp = dict_init_dist['N_mp']
-            self.numelecs_tot = dict_init_dist['numelecs_tot']
-            self.xhist = dict_init_dist['xhist']
+            self.numelecs.append(dict_init_dist['numelecs'])
+            self.N_mp.append(dict_init_dist['N_mp'])
+            self.numelecs_tot.append(dict_init_dist['numelecs_tot'])
+            for xhist in dict_init_dist['xhist']:
+                self.xhist.append(xhist)
             self.bins = dict_init_dist['bins']
-            self.b_pass = dict_init_dist['b_pass']  
+            self.tt.append(dict_init_dist['tt']) 
     
     def save_checkpoint(self, b_pass, elecbw):
         dict_out_temp = {}
@@ -70,17 +69,10 @@ class Saver:
         elecb_w = ew.getw()
         elecs_density = ew.get_density(l_dividebyvolume=0)[:,:,int(nz/2.)]
         elecs_density_tot = ew.get_density(l_dividebyvolume=0)[:,:,:]
-        # resize outputs if needed, this could happen in the event
-        # of a restart with a different simulation length
-        if self.tot_nsteps > len(self.numelecs):
-            N_add = self.tot_nsteps - len(self.numelecs)
-            self.numelecs = np.pad(self.numelecs, (0,N_add), 'constant')
-            self.numelecs_tot = np.pad(self.numelecs_tot, (0,N_add), 'constant')
-            self.N_mp = np.pad(self.N_mp, (0,N_add), 'constant')
-        self.numelecs[n_step] = np.sum(elecs_density)
-        self.numelecs_tot[n_step] = np.sum(elecs_density_tot)
-        self.N_mp[n_step] = len(elecb_w)
-        self.tt[n_step] = picmi.warp.top.time
+        self.numelecs.append(np.sum(elecs_density))
+        self.numelecs_tot.append(np.sum(elecs_density_tot))
+        self.N_mp.append(ew.getn())
+        self.tt.append(picmi.warp.top.time)
 
     def dump_outputs(self, xmin, xmax, elecbw, b_pass):
         dict_out = {}
@@ -89,17 +81,19 @@ class Saver:
         dict_out['N_mp'] = self.N_mp
         # Compute the x-position histogram
         if self.n_bunches is not None:
-            (self.xhist[b_pass-1], self.bins) = np.histogram(elecbw.getx(), 
+            (xhist, self.bins) = np.histogram(elecbw.getx(), 
                                                      range = (xmin,xmax), 
                                                      bins = self.nbins, 
                                                      weights = elecbw.getw(), 
                                                      density = False)
+        self.xhist.append(xhist)
+        
         dict_out['bins'] = self.bins
         dict_out['xhist'] = self.xhist
         dict_out['tt'] = self.tt
-        dict_out['costhav'] = self.sec.costhav
-        dict_out['ek0av'] = self.sec.ek0av
-        dict_out['t_imp'] = self.sec.htime
+        #dict_out['costhav'] = self.sec.costhav
+        #dict_out['ek0av'] = self.sec.ek0av
+        #dict_out['t_imp'] = self.sec.htime
         dict_to_h5(dict_out, self.output_filename)
         
     def dump_em_fields(em, folder, filename):
@@ -112,20 +106,20 @@ class Saver:
         dict_out['bx'] = em.getbxg(guards=1)
         dict_out['by'] = em.getbyg(guards=1)
         dict_out['bz'] = em.getbzg(guards=1)
-        dict_to_h5_serial(dict_out, folder+'/'+str(picmi.warp.me)+'/'+filename) 
+        dict_to_h5(dict_out, folder+'/'+str(picmi.warp.me)+'/'+filename) 
 
     def init_field_probes(self, Nprobes, tot_nsteps, field_probes_dump_stride):
         self.Nprobes = Nprobes
-        self.e_x_vec = np.zeros((Nprobes, tot_nsteps))
-        self.e_y_vec = np.zeros((Nprobes, tot_nsteps))
-        self.e_z_vec = np.zeros((Nprobes, tot_nsteps))
-        self.b_x_vec = np.zeros((Nprobes, tot_nsteps))
-        self.b_y_vec = np.zeros((Nprobes, tot_nsteps))
-        self.b_z_vec = np.zeros((Nprobes, tot_nsteps))
-        self.t_probes = np.zeros(tot_nsteps)
+        self.e_x_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
+        self.e_y_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
+        self.e_z_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
+        self.b_x_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
+        self.b_y_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
+        self.b_z_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
+        self.t_probes = AppendableArray(typecode = 'd')
         self.field_probes_dump_stride = field_probes_dump_stride
 
-    def field_probe(self, probe_i, pp):
+    def update_field_probes(self, pp):
         pw = picmi.warp
         em = self.solver.solver
         ex = em.gatherex()
@@ -134,37 +128,30 @@ class Saver:
         bx = em.gatherbx()
         by = em.gatherby()
         bz = em.gatherbz()
-        if me ==0:
-            self.e_x_vec[probe_i, pw.top.it-3] = ex[pp[0],pp[1],pp[2]]
-            self.e_y_vec[probe_i, pw.top.it-3] = ey[pp[0],pp[1],pp[2]]
-            self.e_z_vec[probe_i, pw.top.it-3] = ez[pp[0],pp[1],pp[2]]
-            self.b_x_vec[probe_i, pw.top.it-3] = bx[pp[0],pp[1],pp[2]]
-            self.b_y_vec[probe_i, pw.top.it-3] = by[pp[0],pp[1],pp[2]]
-            self.b_z_vec[probe_i, pw.top.it-3] = bz[pp[0],pp[1],pp[2]]
-            #Save if specified by the user and if all the probes have been processed
-            stride = self.field_probes_dump_stride
-            if probe_i == self.Nprobes-1:
-                self.t_probes[pw.top.it-3]= pw.top.time
-                if pw.top.it%stride == 0:
-                    dict_out = {}
-                    dict_out['ex'] = self.e_x_vec
-                    dict_out['ey'] = self.e_y_vec
-                    dict_out['ez'] = self.e_z_vec
-                    dict_out['bx'] = self.b_x_vec
-                    dict_out['by'] = self.b_y_vec
-                    dict_out['bz'] = self.b_z_vec
-                    dict_out['t_probes'] = self.t_probes
-                    dict_to_h5_serial(dict_out, self.probe_filename)
+        
+        self.e_x_vec.append(ex[pp[...,0],pp[...,1],pp[...,2]])
+        self.e_y_vec.append(ey[pp[...,0],pp[...,1],pp[...,2]])
+        self.e_z_vec.append(ez[pp[...,0],pp[...,1],pp[...,2]])
+        self.b_x_vec.append(bx[pp[...,0],pp[...,1],pp[...,2]])
+        self.b_y_vec.append(by[pp[...,0],pp[...,1],pp[...,2]])
+        self.b_z_vec.append(bz[pp[...,0],pp[...,1],pp[...,2]])
+       
+        self.t_probes.append(pw.top.time)
 
-    def extend_probe_vectors(self, n_add_steps):
-        add_zeros_fields = np.zeros((self.Nprobes, n_add_steps))
-        add_zeros_t = np.zeros(n_add_steps)
-        self.e_x_vec = np.concatenate((self.e_x_vec, add_zeros_fields), axis = 1) 
-        self.e_y_vec = np.concatenate((self.e_y_vec, add_zeros_fields), axis = 1) 
-        self.e_z_vec = np.concatenate((self.e_z_vec, add_zeros_fields), axis = 1) 
-        self.b_x_vec = np.concatenate((self.b_x_vec, add_zeros_fields), axis = 1) 
-        self.b_y_vec = np.concatenate((self.b_y_vec, add_zeros_fields), axis = 1) 
-        self.b_z_vec = np.concatenate((self.b_z_vec, add_zeros_fields), axis = 1)
-        self.b_z_vec = np.concatenate((self.b_z_vec, add_zeros_fields), axis = 1)
-        self.t_probes = np.concatenate((self.t_probes, add_zeros_t))
+        #Save if specified by the user and if all the probes have been processed
+        stride = self.field_probes_dump_stride 
+        if pw.top.it%stride == 0:
+            self.dump_probes()
+
+    def dump_probes(self):
+        pw = picmi.warp
+        dict_out = {}
+        dict_out['ex'] = self.e_x_vec
+        dict_out['ey'] = self.e_y_vec
+        dict_out['ez'] = self.e_z_vec
+        dict_out['bx'] = self.b_x_vec
+        dict_out['by'] = self.b_y_vec
+        dict_out['bz'] = self.b_z_vec
+        dict_out['t_probes'] = self.t_probes
+        dict_to_h5(dict_out, self.probe_filename)
 
