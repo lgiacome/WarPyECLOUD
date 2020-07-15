@@ -1,8 +1,8 @@
 import numpy as np
 import os
 from h5py_manager import dict_of_arrays_and_scalar_from_h5, dict_to_h5, dict_to_h5_serial
-from warp import picmi, AppendableArray
-from warp_parallel import parallelsum, npes
+from warp import AppendableArray
+from warp import picmi
 
 class Saver:
 
@@ -31,9 +31,6 @@ class Saver:
             self.xhist = AppendableArray(initlen = n_bunches, typecode = 'd', unitshape = (1,self.nbins))
         self.bins = np.zeros(self.nbins)
         self.tt = AppendableArray(initlen = tot_nsteps, typecode='d')
-        self.costhav = AppendableArray(initlen = tot_nsteps, typecode='d')
-        self.ek0av = AppendableArray(initlen = tot_nsteps, typecode='d')
-        self.htime = AppendableArray(initlen = tot_nsteps, typecode='d')
 
     def restore_outputs_from_file(self):
         dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
@@ -45,11 +42,6 @@ class Saver:
                 self.xhist.append(xhist)
             self.bins = dict_init_dist['bins']
             self.tt.append(dict_init_dist['tt']) 
-            
-            self.costhav = dict_out['costhav']
-            self.ek0av = dict_out['ek0av']
-            self.htime = dict_out['t_imp']
-            
     
     def save_checkpoint(self, b_pass, elecbw):
         dict_out_temp = {}
@@ -81,13 +73,6 @@ class Saver:
         self.numelecs_tot.append(np.sum(elecs_density_tot))
         self.N_mp.append(ew.getn())
         self.tt.append(picmi.warp.top.time)
-        if len(self.sec.costhav) > 0:
-            costhav = parallelsum(self.sec.costhav[-1])/npes
-            ek0av = paralellsum(self.sec.ek0av[-1])/npes
-            htime = paralellsum(self.sec.htime[-1])/npes
-            self.costhav.append(costhav)
-            self.ek0av.append(ek0av)
-            self.htime.append(htime)
 
     def dump_outputs(self, xmin, xmax, elecbw, b_pass):
         dict_out = {}
@@ -106,9 +91,9 @@ class Saver:
         dict_out['bins'] = self.bins
         dict_out['xhist'] = self.xhist
         dict_out['tt'] = self.tt
-        dict_out['costhav'] = self.costhav
-        dict_out['ek0av'] = self.ek0av
-        dict_out['t_imp'] = self.htime
+        #dict_out['costhav'] = self.sec.costhav
+        #dict_out['ek0av'] = self.sec.ek0av
+        #dict_out['t_imp'] = self.sec.htime
         dict_to_h5(dict_out, self.output_filename)
         
     def dump_em_fields(em, folder, filename):
@@ -143,20 +128,21 @@ class Saver:
         bx = em.gatherbx()
         by = em.gatherby()
         bz = em.gatherbz()
-        
-        self.e_x_vec.append(ex[pp[...,0],pp[...,1],pp[...,2]])
-        self.e_y_vec.append(ey[pp[...,0],pp[...,1],pp[...,2]])
-        self.e_z_vec.append(ez[pp[...,0],pp[...,1],pp[...,2]])
-        self.b_x_vec.append(bx[pp[...,0],pp[...,1],pp[...,2]])
-        self.b_y_vec.append(by[pp[...,0],pp[...,1],pp[...,2]])
-        self.b_z_vec.append(bz[pp[...,0],pp[...,1],pp[...,2]])
-       
-        self.t_probes.append(pw.top.time)
 
-        #Save if specified by the user and if all the probes have been processed
-        stride = self.field_probes_dump_stride 
-        if pw.top.it%stride == 0:
-            self.dump_probes()
+        if picmi.warp.me == 0: 
+            self.e_x_vec.append(ex[pp[...,0],pp[...,1],pp[...,2]])
+            self.e_y_vec.append(ey[pp[...,0],pp[...,1],pp[...,2]])
+            self.e_z_vec.append(ez[pp[...,0],pp[...,1],pp[...,2]])
+            self.b_x_vec.append(bx[pp[...,0],pp[...,1],pp[...,2]])
+            self.b_y_vec.append(by[pp[...,0],pp[...,1],pp[...,2]])
+            self.b_z_vec.append(bz[pp[...,0],pp[...,1],pp[...,2]])
+           
+            self.t_probes.append(pw.top.time)
+
+            #Save if specified by the user and if all the probes have been processed
+            stride = self.field_probes_dump_stride 
+            if pw.top.it%stride == 0:
+                self.dump_probes()
 
     def dump_probes(self):
         pw = picmi.warp
@@ -168,5 +154,5 @@ class Saver:
         dict_out['by'] = self.b_y_vec
         dict_out['bz'] = self.b_z_vec
         dict_out['t_probes'] = self.t_probes
-        dict_to_h5(dict_out, self.probe_filename)
+        dict_to_h5_serial(dict_out, self.probe_filename)
 
