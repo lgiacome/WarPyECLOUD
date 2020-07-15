@@ -365,6 +365,10 @@ class Triangulation:
     def __init__(self, filename, ghost_x = 1e-3, ghost_y = 1e-3, ghost_z = 1e-3, 
                  condid = 1):
         import meshio
+        self.ghost_x = ghost_x
+        self.ghost_y = ghost_y
+        self.ghost_z = ghost_z
+
         mesh = meshio.read(filename, file_format="gmsh")
         points = self.points = mesh.points
         triangles2points = mesh.cells_dict['triangle']
