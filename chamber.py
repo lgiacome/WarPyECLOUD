@@ -387,4 +387,4 @@ class Triangulation:
         self.upper_bound = [np.max(points[:, 0]), np.max(points[:, 1]), np.max(points[:, 2])]
 
     def is_outside(self, xx, yy, zz):
-        return self.conductors.isinside(xx, yy, zz)
+        return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
