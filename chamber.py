@@ -360,7 +360,7 @@ class CrabCavityWaveguide:
 
 
 class Triangulation:
-    def __init__(self, filename, ghost_x=1e-3, ghost_y=1e-3, ghost_z=1e-3,
+    def __init__(self, filename, ghost_x=20e-3, ghost_y=20e-3, ghost_z=20e-3,
                  condid=1):
         import meshio
         self.ghost_x = ghost_x
@@ -368,23 +368,31 @@ class Triangulation:
         self.ghost_z = ghost_z
 
         mesh = meshio.read(filename, file_format="gmsh")
-        points = self.points = mesh.points
+        self.points = mesh.points/1e3
         triangles2points = mesh.cells_dict['triangle']
         Ntri = np.shape(triangles2points)[0]
-        triangles = points[triangles2points].transpose(2, 1, 0)
-
-        self.xmin = np.min(points[:, 0]) - ghost_x
-        self.xmax = np.max(points[:, 0]) + ghost_x
-        self.ymin = np.min(points[:, 1]) - ghost_y
-        self.ymax = np.max(points[:, 1]) + ghost_y
-        self.zmin = np.min(points[:, 2]) - ghost_z
-        self.zmax = np.max(points[:, 2]) + ghost_z
+        triangles = self.points[triangles2points].transpose(2, 1, 0)
+   
+        self.xmin =  np.min(self.points[:, 0]) - ghost_x
+        self.xmax = np.max(self.points[:, 0]) + ghost_x
+        self.ymin = np.min(self.points[:, 1]) - ghost_y
+        self.ymax = np.max(self.points[:, 1]) + ghost_y
+        #self.xmin = -200e-3 - ghost_x
+        #self.xmax = -self.xmin
+        #self.ymin = -242e-3 / 2 - ghost_y
+        #self.ymax = -self.ymin
+        self.zmin = np.min(self.points[:, 2]) - ghost_z
+        self.zmax = np.max(self.points[:, 2]) + ghost_z
 
         self.conductors = picmi.warp.Triangles(triangles, condid=condid)
 
-
-        self.lower_bound = [np.min(points[:, 0]), np.min(points[:, 1]), np.min(points[:, 2])]
-        self.upper_bound = [np.max(points[:, 0]), np.max(points[:, 1]), np.max(points[:, 2])]
+        self.lower_bound = [np.min(self.points[:, 0]), np.min(self.points[:, 1]), np.min(self.points[:, 2])]
+        self.upper_bound = [np.max(self.points[:, 0]), np.max(self.points[:, 1]), np.max(self.points[:, 2])]
+        #self.lower_bound = [self.xmin, self.ymin, self.zmin]
+        #self.upper_bound = [self.xmax, self.ymax, self.zmax]
+        #self.lower_bound = [-0.05, -0.1, -0.2]
+        #self.upper_bound = -np.array([-0.05, -0.1, -0.2])
 
     def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
+
