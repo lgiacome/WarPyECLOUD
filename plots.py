@@ -123,7 +123,7 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
     #d = (self.ecloud.wspecies.get_density()
     #   + self.beam.wspecies.get_density())
     #d2  = (self.ecloud.wspecies.get_density())
-    im1 = axs[0].imshow(ff[:, :, int(Nz/2)] .T, cmap = 'jet', 
+    im1 = axs[0].imshow(ff[:, :, int(Nz/2)].T, cmap = 'jet', 
                         origin = 'lower',
                         vmin = mine,
                         vmax = maxe,
@@ -143,6 +143,7 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
     axs[1].set_xlabel('z [m]')
     axs[1].set_ylabel('y [m]')
     axs[1].set_title(ffstr)
+    plt.suptitle
     if not os.path.exists(images_dir):
         os.mkdir(images_dir)
     if not os.path.exists(images_dir + '/' + ffstr):
@@ -150,5 +151,6 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
     fig.colorbar(im2, ax = axs[1])
     figname = images_dir +'/'+ ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
     #figname = self.images_dir + '/%d.png' %int(self.n_step)
+    fig.suptitle(ffstr + ', t = %1.6e' %pw.top.time )
     plt.savefig(figname)
     plt.close(fig)
