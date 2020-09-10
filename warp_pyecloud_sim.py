@@ -14,6 +14,7 @@ from warp.particles.Secondaries import Secondaries
 import numpy as np
 import numpy.random as random
 import matplotlib.pyplot as plt
+from scipy.constants import c as c_light
 # System imports
 from io import StringIO
 import sys
@@ -131,7 +132,7 @@ class warp_pyecloud_sim(object):
 
         self.bunch_rms_size = [self.sigmax, self.sigmay, self.sigmaz]
         self.bunch_rms_velocity = [0., 0., 0.]
-        self.bunch_centroid_position = [0, 0, self.chamber.zmin + self.chamber.ghost_z]
+        self.bunch_centroid_position = [0, 0, self.chamber.lower_bound[2]]
         self.bunch_centroid_velocity = [0., 0., self.beam_beta * picmi.constants.c]
 
         self.species_names = ['beam', 'ecloud']
@@ -436,6 +437,7 @@ class warp_pyecloud_sim(object):
         for i in range(self.n_step, self.tot_nsteps):
             self.step()
             self.n_step += 1
+            #print(self.beam.wspecies.getn())
 
     def all_steps_no_ecloud(self):
         if picmi.warp.me == 0:
@@ -497,8 +499,7 @@ class warp_pyecloud_sim(object):
                 vx0 = np.zeros(init_num_elecs_mp)
                 vy0 = np.zeros(init_num_elecs_mp)
                 vz0 = np.zeros(init_num_elecs_mp)
-                gi0 = np.ones(init_num_elecs_mp)
-
+                gi0 = c_light/np.sqrt(c_light**2 - np.square(vx0) - np.square(vy0) - np.square(vz0))
                 flag_out = chamber.is_outside(x0, y0, z0)
                 Nout = np.sum(flag_out)
                 while Nout > 0:
@@ -508,7 +509,7 @@ class warp_pyecloud_sim(object):
                                                   upper_bound[1], Nout)
                     z0[flag_out] = random.uniform(lower_bound[2],
                                                   upper_bound[2], Nout)
-
+                   
                     flag_out = chamber.is_outside(x0, y0, z0)
                     Nout = np.sum(flag_out)
 
