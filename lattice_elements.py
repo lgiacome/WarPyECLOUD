@@ -8,10 +8,11 @@ class Dipole:
 
 class CrabFields:
 
-    def __init__(self, min_z, max_rescale = 1., efield_path = 'efield.txt',
+    def __init__(self, max_rescale = 1., efield_path = 'efield.txt',
                  hfield_path = 'hfield.txt', chamber = None, t_offs = None):
         get_data = picmi.getdatafromtextfile
         self.maxE = max_rescale
+        self.chamber = chamber
 
         [x,y,z,ReEx,ReEy,ReEz,ImEx,ImEy,ImEz] = get_data(efield_path, nskip=1, dims=[9,None])
         [_,_,_,ReHx,ReHy,ReHz,ImHx,ImHy,ImHz] = get_data(hfield_path, nskip=1, dims=[9,None])
@@ -94,7 +95,7 @@ class CrabFields:
         self.freq = 400*1e6
         self.Nt = 1000
         self.phase_disp=np.pi/2
-        delay = (chamber.zmin+1e-4)/picmi.clight - t_offs
+        delay = (self.chamber.lower_bound[2])/picmi.clight - t_offs
 
         time_array = np.linspace(0., self.Tf, self.Nt)
 
