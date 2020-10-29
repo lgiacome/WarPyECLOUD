@@ -25,5 +25,6 @@ def reinit(sim, laser_func, custom_plot, custom_time_prof = None):
 
     sim.solver.solver.laser_func = sim.laser_func
     sim.solver.em3dfft_args['laser_func'] = sim.laser_func
+    sim.print_solvers_info() 
     sim.text_trap = {True: StringIO(), False: sys.stdout}[sim.enable_trap]
     sim.original = sys.stdout
