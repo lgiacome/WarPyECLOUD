@@ -58,7 +58,7 @@ class warp_pyecloud_sim(object):
                          'stride_output': 1000,
                          'temps_filename': 'temp_mps_info.h5',
                          'custom_plot': None, 'images_dir': None,
-                         'field_probes': [], 'field_probes_dump_stride': 100,
+                         'field_probes': [], 'field_probes_dump_stride': 1000,
                          'probe_filename': 'probe.h5'
                          }
 
@@ -132,7 +132,7 @@ class warp_pyecloud_sim(object):
 
         self.bunch_rms_size = [self.sigmax, self.sigmay, self.sigmaz]
         self.bunch_rms_velocity = [0., 0., 0.]
-        self.bunch_centroid_position = [0, 0, self.chamber.lower_bound[2]]
+        self.bunch_centroid_position = [0, 0, self.chamber.z_inj_beam]
         self.bunch_centroid_velocity = [0., 0., self.beam_beta * picmi.constants.c]
 
         self.species_names = ['beam', 'ecloud']
@@ -171,7 +171,7 @@ class warp_pyecloud_sim(object):
             self.solver = picmi.ElectrostaticSolver(grid=grid_ES)
 
         elif self.solver_type == 'EM':
-            grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
+            self.grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
                                             lower_bound=self.lower_bound,
                                             upper_bound=self.upper_bound,
                                             lower_boundary_conditions=self.pml_bc,
@@ -186,7 +186,7 @@ class warp_pyecloud_sim(object):
                                               stride=stride,
                                               alpha=alpha)
 
-            self.solver = picmi.ElectromagneticSolver(grid=grid_EM,
+            self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
                                                       method=self.EM_method, cfl=self.cfl,
                                                       source_smoother=smoother,
                                                       warp_l_correct_num_Cherenkov=False,
@@ -302,6 +302,19 @@ class warp_pyecloud_sim(object):
         # trapping warp std output
         self.text_trap = {True: StringIO(), False: sys.stdout}[self.enable_trap]
         self.original = sys.stdout
+        self.print_solvers_info()
+
+    def print_solvers_info(self):
+        # printing info about the sim
+        print('dx = %e' %self.solver.solver.dx) 
+        print('dy = %e' %self.solver.solver.dy) 
+        print('dz = %e' %self.solver.solver.dz) 
+        dtCFL = self.cfl/(c_light*np.sqrt(1/self.solver.solver.dx**2 + 
+                                     1/self.solver.solver.dy**2 + 
+                                     1/self.solver.solver.dz**2))
+
+        print('EM solver: dt = %e' %dtCFL)
+        print('ES solver: dt = %e' %picmi.warp.top.dt)
 
     def add_es_solver(self, deposition_species = []):
         grid_ES = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
@@ -332,7 +345,7 @@ class warp_pyecloud_sim(object):
                                           stride=stride,
                                           alpha=alpha)
 
-        self.EM_solver = picmi.ElectromagneticSolver(grid=grid_EM,
+        self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
                                                      method=self.EM_method, cfl=self.cfl,
                                                      source_smoother=smoother,
                                                      warp_l_correct_num_Cherenkov=False,
@@ -423,7 +436,7 @@ class warp_pyecloud_sim(object):
 
             # Store stuff to be saved
             if self.flag_output:
-                self.saver.update_outputs(self.ecloud.wspecies, self.nz,
+                self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies, self.nz,
                                           self.n_step)
 
             if self.n_step > self.tot_nsteps:
@@ -446,7 +459,8 @@ class warp_pyecloud_sim(object):
                 picmi.warp.step(1)
                 sys.stdout = self.original
                 if self.flag_output:
-                    self.saver.update_outputs(self.ecloud.wspecies, self.nz, self.n_step)
+                    self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies, 
+                                                self.nz, self.n_step)
                 if self.flag_output and self.n_step % self.stride_output == 0:
                     self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax, self.ecloud.wspecies, self.b_pass)
                 # Perform regeneration if needed
@@ -462,7 +476,8 @@ class warp_pyecloud_sim(object):
                 picmi.warp.step(1)
                 sys.stdout = self.original
                 if self.flag_output:
-                    self.saver.update_outputs(self.ecloud.wspecies, self.nz, self.n_step)
+                    self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies,
+                                              self.nz, self.n_step)
                 if self.flag_output and self.n_step % self.stride_output == 0:
                     self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax, self.ecloud.wspecies, self.b_pass)
                 # Perform regeneration if needed
