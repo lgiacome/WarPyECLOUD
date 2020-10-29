@@ -261,6 +261,7 @@ class CrabCavityWaveguide:
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
+        self.z_inj_beam = self.z_start
         self.l_main_y = 242e-3
         self.l_main_x = 300e-3
         self.l_main_z = 350e-3
