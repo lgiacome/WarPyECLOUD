@@ -160,23 +160,23 @@ class warp_pyecloud_sim(object):
         self.number_of_cells = [self.nx, self.ny, self.nz]
         self.lower_bound = [self.chamber.xmin, self.chamber.ymin, self.chamber.zmin]
         self.upper_bound = [self.chamber.xmax, self.chamber.ymax, self.chamber.zmax]
+        
+        self.grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
+                                        lower_bound=self.lower_bound,
+                                        upper_bound=self.upper_bound,
+                                        lower_boundary_conditions=self.pml_bc,
+                                        upper_boundary_conditions=self.pml_bc)
 
+
+        grid_ES = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
+                                        lower_bound=self.lower_bound,
+                                        upper_bound=self.upper_bound,
+                                        lower_boundary_conditions=self.dir_bc,
+                                        upper_boundary_conditions=self.dir_bc)
         if self.solver_type == 'ES':
-            grid_ES = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
-                                            lower_bound=self.lower_bound,
-                                            upper_bound=self.upper_bound,
-                                            lower_boundary_conditions=self.dir_bc,
-                                            upper_boundary_conditions=self.dir_bc)
-
             self.solver = picmi.ElectrostaticSolver(grid=grid_ES)
 
         elif self.solver_type == 'EM':
-            self.grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
-                                            lower_bound=self.lower_bound,
-                                            upper_bound=self.upper_bound,
-                                            lower_boundary_conditions=self.pml_bc,
-                                            upper_boundary_conditions=self.pml_bc)
-
             n_pass = [[1], [1], [1]]
             stride = [[1], [1], [1]]
             compensation = [[False], [False], [False]]
@@ -186,7 +186,9 @@ class warp_pyecloud_sim(object):
                                               stride=stride,
                                               alpha=alpha)
 
-            self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+
+            if hasattr(self, 'laser_func'):
+                self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
                                                       method=self.EM_method, cfl=self.cfl,
                                                       source_smoother=smoother,
                                                       warp_l_correct_num_Cherenkov=False,
@@ -201,6 +203,14 @@ class warp_pyecloud_sim(object):
                                                       warp_laser_xmax=self.laser_xmax,
                                                       warp_laser_ymin=self.laser_ymin,
                                                       warp_laser_ymax=self.laser_ymax)
+            else:
+                self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+                                                      method=self.EM_method, cfl=self.cfl,
+                                                      source_smoother=smoother,
+                                                      warp_l_correct_num_Cherenkov=False,
+                                                      warp_type_rz_depose=0,
+                                                      warp_l_setcowancoefs=True,
+                                                      warp_l_getrho=False)
 
         # Setup simulation
         self.sim = picmi.Simulation(solver=self.solver, verbose=1,
@@ -226,8 +236,8 @@ class warp_pyecloud_sim(object):
         
         self.sim.step(1)
         
-        # if self.tot_nsteps is None and self.n_bunches is not None:
-        #    self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
+        if self.tot_nsteps is None and self.n_bunches is not None:
+            self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
         if self.tot_nsteps is None and self.t_end is not None:
             self.tot_nsteps = int(np.round(self.t_end / top.dt))
         elif self.tot_nsteps is None and self.n_bunches is None:
