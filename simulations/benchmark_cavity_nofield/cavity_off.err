@@ -1,0 +1,91 @@
+/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/venvs/py3/lib/python3.7/site-packages/warp/warp.py:62: UserWarning: there was an error importing gist; if this is a problem, restart python and type 'import gist' for details, otherwise Warp will run OK but with no graphics
+  warnings.warn("there was an error importing gist; if this is a problem, restart python and type 'import gist' for details, otherwise Warp will run OK but with no graphics")
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+Traceback (most recent call last):
+  File "cavity_off.py", line 83, in <module>
+    sim.add_em_solver()
+  File "/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/warp_pyecloud_sim.py", line 357, in add_em_solver
+    self.EM_solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
+AttributeError: 'warp_pyecloud_sim' object has no attribute 'grid_EM'
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpiexec detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[3144,1],5]
+  Exit code:    1
+--------------------------------------------------------------------------
+condor_exec.exe: line 33: /afs/cern.ch/user/l/lgiacome: Is a directory
+040 (1597416.000.000) 12/09 10:39:33 Finished transferring output files
+...
+005 (1597416.000.000) 12/09 10:39:33 Job terminated.
+	(1) Normal termination (return value 126)
+		Usr 0 00:00:27, Sys 0 00:00:06  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:27, Sys 0 00:00:06  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	9175  -  Run Bytes Sent By Job
+	997  -  Run Bytes Received By Job
+	9175  -  Total Bytes Sent By Job
+	997  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :        0       10        10 
+	   Disk (KB)            :       36        1    287937 
+	   Memory (MB)          :      316    20000     20000 
+...

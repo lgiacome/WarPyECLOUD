@@ -1,0 +1,10 @@
+universe = vanilla
+executable = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/rect_dipole/rect_dipole.job
+arguments = ""
+output = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/rect_dipole/rect_dipole.out
+error = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/rect_dipole/rect_dipole.err
+log = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/rect_dipole/rect_dipole.log
+RequestCpus = 24
+transfer_output_files = ""
++MaxRuntime = 172800
+queue

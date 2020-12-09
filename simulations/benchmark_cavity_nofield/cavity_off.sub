@@ -1,0 +1,10 @@
+universe = vanilla
+executable = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/benchmark_cavity_nofield/cavity_off.job
+arguments = ""
+output = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/benchmark_cavity_nofield/cavity_off.out
+error = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/benchmark_cavity_nofield/cavity_off.err
+log = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/benchmark_cavity_nofield/cavity_off.err
+RequestCpus = 10
+transfer_output_files = ""
++MaxRuntime = 172800
+queue

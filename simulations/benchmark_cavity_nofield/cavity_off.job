@@ -1,0 +1,33 @@
+#!/bin/bash
+
+PYECLOUDPATH=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/PySTUFF
+WARPYECLOUDPATH=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD
+CURRDIR=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/benchmark_cavity_nofield
+export CURRDIR
+
+source /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/venvs/py3/bin/activate
+which python
+
+PYTHONPATH=$PYECLOUDPATH
+PYTHONPATH=$PYTHONPATH:$WARPYECLOUDPATH
+export PYTHONPATH
+echo $PYTHONPATH
+
+# Copy input and executable
+
+cp ${CURRDIR}/cavity_off.py .
+
+#execute beam generation
+export NCPUS=${NCPUS:-10}
+/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/openmpi/bin/mpiexec -np $NCPUS python cavity_off.py -p 1 1 $NCPUS
+
+#tar -cf rect_dipole_imgs.tar.gz images_rect_dipole
+
+#save result
+#cp rect_dipole_imgs.tar.gz /eos/user/l/lgiacome/consistent_crab_cavity_scan/results/rect_dipole_imgs.tar.gz
+
+#save result
+#cp rect_dipole_temp.h5 ${CURRDIR}
+#cp rect_dipole_out.h5 ${CURRDIR}
+#cp probe.h5 ${CURRDIR}
+~
