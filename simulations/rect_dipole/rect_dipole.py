@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 enable_trap = True
 
 nz = 100
-N_mp_max_slice = 60000
-init_num_elecs_slice = 2*10**7
+N_mp_max_slice = 10000/nz
+init_num_elecs_slice = 2*10**7/nz
 dh = 6.e-4
 width = 2*23e-3
 height = 2*18e-3
@@ -41,7 +41,7 @@ beam_gamma = 479.
 beam_beta = np.sqrt(1-1/(beam_gamma**2))
 sigmax = np.sqrt(beta_x*nemittx/(beam_gamma*beam_beta))
 sigmay = np.sqrt(beta_y*nemitty/(beam_gamma*beam_beta))
-n_bunches = 50
+n_bunches = 1
 print(sigmax)
 
 def dipole_plots(self, l_force=0):
@@ -130,4 +130,10 @@ if sc_type == 'ES':
     sim.distribute_species(primary_species=[sim.beam.wspecies], es_species=[sim.ecloud.wspecies])
 
 
-sim.all_steps_no_ecloud()
+#sim.all_steps_no_ecloud()
+for i in range(3):
+    picmi.warp.step()
+    print(sim.ecloud.wspecies.getn())
+    print(np.sum(sim.ecloud.wspecies.getw()))
+
+
