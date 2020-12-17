@@ -148,11 +148,24 @@ class warp_pyecloud_sim(object):
                                         particle_shape='linear',
                                         name=self.species_names[1],
                                         initial_distribution=self.load_elec_density())
+        elif self.t_inject_elec == 0:
+            
+            lower_bound = self.chamber.lower_bound
+            upper_bound = self.chamber.upper_bound
+            vol = np.prod(np.array(upper_bound) - np.array(lower_bound))
+            dens = self.init_num_elecs/vol           
+            unif_dist = picmi.UniformDistribution(dens,
+                                                  lower_bound = lower_bound,
+                                                  upper_bound = upper_bound) 
+            self.ecloud = picmi.Species(particle_type='electron',
+                                        particle_shape='linear',
+                                        name=self.species_names[1],
+                                        initial_distribution = unif_dist)            
         else:
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
                                         name=self.species_names[1])
-            self.b_pass = 0
+        self.b_pass = 0
         # Setup grid and boundary conditions
         self.dir_bc = ['dirichlet', 'dirichlet', 'dirichlet']
         self.pml_bc = ['open', 'open', 'open']
@@ -221,12 +234,19 @@ class warp_pyecloud_sim(object):
         self.sim.add_species(self.beam, layout=None,
                         initialize_self_field=False)
 
-        self.ecloud_layout = picmi.PseudoRandomLayout(
-            n_macroparticles=self.init_num_elecs_mp,
-            seed=3)
+        #self.ecloud_layout = picmi.PseudoRandomLayout(
+        #    n_macroparticles=self.init_num_elecs_mp,
+        #    seed=3)
 
+        tot_cells = 2 #self.nx*self.ny*self.nz
+        self.ecloud_layout = picmi.GriddedLayout(grid=self.grid_EM,
+            n_macroparticle_per_cell= np.array([2.5,2.5,2.5])) #np.array([int(self.init_num_elecs_mp/tot_cells), 
+                                               #int(self.init_num_elecs_mp/tot_cells), 
+                                               #int(self.init_num_elecs_mp/tot_cells)]))
+
+        init_field = self.t_inject_elec == 0 and self.solver_type=='EM'
         self.sim.add_species(self.ecloud, layout=self.ecloud_layout,
-                        initialize_self_field=False)
+                        initialize_self_field= init_field)
         
         if self.bunch_macro_particles > 0:
             picmi.warp.installuserinjection(self.bunched_beam)
@@ -510,7 +530,7 @@ class warp_pyecloud_sim(object):
         vz0 = np.empty(init_num_elecs_mp, dtype=float)
         gi0 = np.empty(init_num_elecs_mp, dtype=float)
 
-        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt) and (pwt.time - self.t_inject_elec) > 0:
+        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt) and (pwt.time - self.t_inject_elec) > 0 and self.t_inject_elec!=0:
             if picmi.warp.me == 0:
                 chamber = self.chamber
                 lower_bound = chamber.lower_bound
