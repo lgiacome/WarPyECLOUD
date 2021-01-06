@@ -152,5 +152,9 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
     figname = images_dir +'/'+ ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
     #figname = self.images_dir + '/%d.png' %int(self.n_step)
     fig.suptitle(ffstr + ', t = %1.6e' %pw.top.time )
+    if not os.path.exists(images_dir):
+        os.mkdir(images_dir)
+    if not os.path.exists(images_dir + '/' + ffstr):
+        os.mkdir(images_dir + '/' + ffstr)
     plt.savefig(figname)
     plt.close(fig)
