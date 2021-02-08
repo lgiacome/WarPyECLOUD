@@ -36,7 +36,7 @@ class RectChamber:
         left_box = picmi.warp.XPlane(x0=width / 2, xsign=1, condid=condid)
         right_box = picmi.warp.XPlane(x0=-width / 2, xsign=-1,
                                       condid=condid)
-        self.z_inj_beam = self.z_start
+        self.z_inj_beam = (0.2*self.z_start+0.8*self.zmin)
         self.conductors = upper_box + lower_box + left_box + right_box
 
     def is_outside(self, xx, yy, zz):
@@ -312,7 +312,7 @@ class CrabCavityWaveguide:
         self.x_max_wg = 200e-3
         self.z_rest = -205e-3
         self.z_max_wg = -self.l_main_z / 2
-        self.z_min_wg = self.zmin
+        self.z_min_wg = self.zmin*1.2
         self.ycen6 = 0.5 * (self.y_min_wg + self.y_max_wg)
         self.zcen6 = 0.5 * (self.z_rest + self.z_max_wg)
         box6 = picmi.warp.Box(zsize=self.z_max_wg - self.z_rest,
@@ -320,7 +320,7 @@ class CrabCavityWaveguide:
                               ysize=self.y_max_wg - self.y_min_wg,
                               ycent=self.ycen6, zcent=self.zcen6)
         self.ycen7 = 0.5 * (self.y_min_wg + self.y_max_wg)
-        self.zcen7 = 0.5 * (self.z_min_wg + self.z_max_wg)
+        self.zcen7 = 0.5 * (self.z_min_wg + self.z_rest)
         box7 = picmi.warp.Box(zsize=self.z_rest - self.z_min_wg,
                               xsize=self.x_max_wg - self.x_min_wg,
                               ysize=self.y_max_wg - self.y_min_wg,
