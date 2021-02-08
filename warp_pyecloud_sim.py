@@ -196,7 +196,9 @@ class warp_pyecloud_sim(object):
                                         upper_boundary_conditions=self.dir_bc)
 
         if self.solver_type == 'ES':
-            self.solver = picmi.ElectrostaticSolver(grid=grid_ES)
+            self.solver = picmi.ElectrostaticSolver(grid=grid_ES,
+                                                    warp_conductors = conductors,
+                                                    warp_conductor_dfill = picmi.warp.largepos)
 
         elif self.solver_type == 'EM':
             if self.source_smoothing:
@@ -226,7 +228,9 @@ class warp_pyecloud_sim(object):
                                                       warp_laser_xmin=self.laser_xmin,
                                                       warp_laser_xmax=self.laser_xmax,
                                                       warp_laser_ymin=self.laser_ymin,
-                                                      warp_laser_ymax=self.laser_ymax)
+                                                      warp_laser_ymax=self.laser_ymax,
+                                                      warp_conductors = self.chamber.conductors,
+                                                      warp_conductor_dfill = picmi.warp.largepos)
             else:
                 self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
                                                       method=self.EM_method, cfl=self.cfl,
@@ -234,14 +238,15 @@ class warp_pyecloud_sim(object):
                                                       warp_l_correct_num_Cherenkov=False,
                                                       warp_type_rz_depose=0,
                                                       warp_l_setcowancoefs=True,
-                                                      warp_l_getrho=False)            
+                                                      warp_l_getrho=False,
+                                                      warp_conductors = self.chamber.conductors,
+                                                      warp_conductor_dfill = picmi.warp.largepos)            
 
 
         # Setup simulation
         self.sim = picmi.Simulation(solver=self.solver, verbose=1,
                                cfl=self.cfl,
                                warp_initialize_solver_after_generate=1)
-        self.sim.conductors = self.chamber.conductors
 
         self.sim.add_species(self.beam, layout=None,
                         initialize_self_field=False)
@@ -277,12 +282,6 @@ class warp_pyecloud_sim(object):
             raise Exception('One between n_bunches, tot_nsteps, t_end has to be specified')
          
        
-        self.solver.solver.installconductor(self.sim.conductors,
-                                            dfill=picmi.warp.largepos)
-
-        self.sim.step(1)
-
-
         # Initialize the EM fields
         # if self.init_em_fields:
         #    em = self.solver.solver
@@ -299,19 +298,17 @@ class warp_pyecloud_sim(object):
         #    em.setebp()
 
         # Setup secondary emission stuff       
-        self.part_scraper = ParticleScraper(self.sim.conductors, lsavecondid=1, lsaveintercept=1, lcollectlpdata=1)
+        self.part_scraper = ParticleScraper(self.chamber.conductors, lsavecondid=1, lsaveintercept=1, lcollectlpdata=1)
 
-        self.sec = Secondaries(conductors=self.sim.conductors, l_usenew=1,
+        self.sec = Secondaries(conductors=self.chamber.conductors, l_usenew=1,
                                pyecloud_secemi_object=self.sey_mod,
                                pyecloud_nel_mp_ref=self.pyecloud_nel_mp_ref,
                                pyecloud_fact_clean=self.pyecloud_fact_clean,
                                pyecloud_fact_split=self.pyecloud_fact_split)
  
-       # self.sec=Secondaries(conductors = sim.conductors, l_usenew = 1)
-
         self.sec.add(incident_species=self.ecloud.wspecies,
                      emitted_species=self.ecloud.wspecies,
-                     conductor=self.sim.conductors)
+                     conductor=self.chamber.conductors)
 
         self.saver = Saver(self.flag_output, self.flag_checkpointing,
                            self.nbins,
@@ -369,11 +366,13 @@ class warp_pyecloud_sim(object):
                                         lower_boundary_conditions=self.dir_bc,
                                         upper_boundary_conditions=self.dir_bc)
 
-        self.ES_solver = picmi.ElectrostaticSolver(grid=grid_ES, warp_deposition_species=deposition_species)
+        self.ES_solver = picmi.ElectrostaticSolver(grid=grid_ES, 
+                                                   warp_deposition_species=deposition_species,
+                                                   warp_conductors = self.chamber.conductors,
+                                                   warp_conductor_dfill = picmi.warp.largepos)
 
         self.ES_solver.initialize_solver_inputs()
         registersolver(self.ES_solver.solver)
-        self.ES_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
 
     def add_em_solver(self, deposition_species = []):
         grid_EM = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
@@ -398,24 +397,26 @@ class warp_pyecloud_sim(object):
                                                      warp_type_rz_depose=0,
                                                      warp_l_setcowancoefs=True,
                                                      warp_l_getrho=False,
-                                                     warp_deposition_species=deposition_species)
+                                                     warp_deposition_species=deposition_species,
+                                                     warp_conductors = self.chamber.conductors,
+                                                     warp_conductor_dfill = picmi.warp.largepos)
 
         self.EM_solver.initialize_solver_inputs()
         registersolver(self.EM_solver.solver)
-        self.EM_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
 
     def add_ms_solver(self, deposition_species = []):
         grid_MS = picmi.Cartesian3DGrid(number_of_cells=self.number_of_cells,
                                         lower_bound=self.lower_bound,
                                         upper_bound=self.upper_bound,
                                         lower_boundary_conditions=self.dir_bc,
-                                        upper_boundary_conditions=self.dir_bc)
+                                        upper_boundary_conditions=self.dir_bc,
+                                        warp_conductors = self.chamber.conductors,
+                                        warp_conductor_dfill = picmi.warp.largepos)
 
         self.MS_solver = picmi.MagnetostaticSolver(grid=grid_MS, warp_deposition_species=deposition_species)
 
         self.MS_solver.initialize_solver_inputs()
         registersolver(self.MS_solver.solver)
-        self.MS_solver.solver.installconductor(self.sim.conductors, dfill=picmi.warp.largepos)
 
     def distribute_species(self, primary_species=None, es_species=None, em_species=None, ms_species=None):
         if primary_species is not None:
