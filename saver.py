@@ -22,13 +22,13 @@ class Saver:
             self.init_empty_outputs(tot_nsteps, n_bunches)
             if os.path.exists(self.temps_filename):
                 self.restore_outputs_from_file()
-        self.sec = sec
+        #self.sec = sec
 
     @staticmethod
     def save_h5_safe(dict_out, filename, serial=False):
         saved = False
         count = 0
-        if os.path.exists(filename):
+        if picmi.warp.me == 0 and os.path.exists(filename):
             os.remove(filename)
         while 1:
             try:
@@ -96,7 +96,7 @@ class Saver:
         pro_density_tot = bw.get_density(l_dividebyvolume=0)[:,:,:]
         self.numelecs.append(np.sum(elecs_density))
         self.numpro.append(np.sum(pro_density_tot))
-        self.numelecs_tot.append(np.sum(elecs_density_tot))
+        self.numelecs_tot.append(np.sum(np.sum(ew.getw())))
         self.N_mp.append(ew.getn())
         self.tt.append(picmi.warp.top.time)
 
