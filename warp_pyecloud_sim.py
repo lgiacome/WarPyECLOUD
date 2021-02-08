@@ -28,7 +28,8 @@ from mpi4py import MPI
 class warp_pyecloud_sim(object):
     __fieldsolver_inputs__ = {'nx': None, 'ny': None, 'nz': None,
                               'solver_type': 'ES', 'N_subcycle': None,
-                              'EM_method': 'Yee', 'cfl': 1.0, 'dt': None}
+                              'EM_method': 'Yee', 'cfl': 1.0, 'dt': None,
+                              'source_smoothing': True}
 
     __beam_inputs__ = {'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
                        'sigmax': None, 'sigmay': None, 'sigmat': None,
@@ -158,7 +159,6 @@ class warp_pyecloud_sim(object):
             #                                      lower_bound = lower_bound,
             #                                      upper_bound = upper_bound) 
  
-            print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')           
             x0, y0, z0, vx0, vy0, vz0, gi0, w0 = self.uniform_density() 
             unif_dist = picmi.ParticleListDistribution(x=x0, y=y0,
                                                           z=z0, vx=vx0,
@@ -199,15 +199,17 @@ class warp_pyecloud_sim(object):
             self.solver = picmi.ElectrostaticSolver(grid=grid_ES)
 
         elif self.solver_type == 'EM':
-            n_pass = [[1], [1], [1]]
-            stride = [[1], [1], [1]]
-            compensation = [[False], [False], [False]]
-            alpha = [[0.5], [0.5], [0.5]]
-            smoother = picmi.BinomialSmoother(n_pass=n_pass,
-                                              compensation=compensation,
-                                              stride=stride,
-                                              alpha=alpha)
-
+            if self.source_smoothing:
+                n_pass = [[1], [1], [1]]
+                stride = [[1], [1], [1]]
+                compensation = [[False], [False], [False]]
+                alpha = [[0.5], [0.5], [0.5]]
+                smoother = picmi.BinomialSmoother(n_pass=n_pass,
+                                                  compensation=compensation,
+                                                  stride=stride,
+                                                  alpha=alpha)
+            else:
+                smoother = None
 
             if hasattr(self, 'laser_func'):
                 self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
