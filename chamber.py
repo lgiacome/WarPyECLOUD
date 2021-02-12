@@ -29,12 +29,12 @@ class RectChamber:
 
         self.condid = condid
 
-        upper_box = picmi.warp.YPlane(y0=height / 2, ysign=1,
+        upper_box = picmi.warp.YPlane(y0=height / 2 - 1.e-10, ysign=1,
                                       condid=condid)
-        lower_box = picmi.warp.YPlane(y0=-height / 2, ysign=-1,
+        lower_box = picmi.warp.YPlane(y0=-height / 2 + 1.e-10, ysign=-1,
                                       condid=condid)
-        left_box = picmi.warp.XPlane(x0=width / 2, xsign=1, condid=condid)
-        right_box = picmi.warp.XPlane(x0=-width / 2, xsign=-1,
+        left_box = picmi.warp.XPlane(x0=width / 2 - 1.e-10, xsign=1, condid=condid)
+        right_box = picmi.warp.XPlane(x0=-width / 2 + 1.e-10, xsign=-1,
                                       condid=condid)
         self.z_inj_beam = (0.2*self.z_start+0.8*self.zmin)
         self.conductors = upper_box + lower_box + left_box + right_box
@@ -262,68 +262,69 @@ class CrabCavityWaveguide:
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
         self.z_inj_beam = self.z_start
-        self.l_main_y = 242e-3
+        self.l_main_y = 240e-3 #242e-3
         self.l_main_x = 300e-3
-        self.l_main_z = 350e-3
+        self.l_main_z = 354e-3 #350e-3
         self.l_beam_pipe = 84e-3
-        self.l_int = 62e-3
+        self.l_int = 60e-3  #62e-3
         self.l_main_int_y = self.l_main_y - self.l_beam_pipe / 2
         self.l_main_int_z = self.l_main_z / 2 - self.l_int
         self.l_main_int_x = self.l_main_x / 2 - self.l_int
         self.disp = disp
         assert z_start < - self.l_main_z / 2, 'z_start must be lower than -175mm'
         assert z_end > self.l_main_z / 2, 'z_end must be higher than 175mm'
+        self.y_min_wg = 48e-3 + self.disp    #48.4e-3 + self.disp
+        self.y_max_wg = 96e-3 + self.disp    #96.8e-3 + self.disp
+        self.x_min_wg_rest = -120e-3
+        self.x_max_wg_rest = 120e-3
+        self.x_min_wg = -200e-3
+        self.x_max_wg = 200e-3
+        self.z_rest = -204e-3 #-205e-3
 
-        self.xmin = -200e-3 - ghost_x
+        self.xmin = self.x_min_wg - ghost_x
         self.xmax = -self.xmin
         self.ymin = -self.l_main_y / 2 - ghost_y
         self.ymax = -self.ymin
         self.zmin = z_start - ghost_z
         self.zmax = z_end + ghost_z
 
+        self.z_max_wg = -self.l_main_z / 2
+        self.z_min_wg = self.zmin*1.2
+
         box1 = picmi.warp.Box(zsize=self.zmax - self.zmin,
                               xsize=self.xmax - self.xmin,
                               ysize=self.ymax - self.ymin, condid=condid,
                               zcent=0.5 * (self.zmax + self.zmin))
         box2 = picmi.warp.Box(zsize=self.zmax - self.zmin,
-                              xsize=self.l_beam_pipe,
-                              ysize=self.l_beam_pipe, condid=condid,
+                              xsize=self.l_beam_pipe - 2.e-10,
+                              ysize=self.l_beam_pipe - 2.e-10, condid=condid,
                               zcent=0.5 * (self.zmax + self.zmin))
-        box3 = picmi.warp.Box(zsize=self.l_main_z,
-                              xsize=self.l_main_x,
-                              ysize=self.l_main_y, condid=condid)
+        box3 = picmi.warp.Box(zsize=self.l_main_z - 2.e-10,
+                              xsize=self.l_main_x - 2.e-10,
+                              ysize=self.l_main_y - 2.e-10, condid=condid)
 
         self.ycen_up = self.l_beam_pipe / 2 + self.l_main_int_y
         self.ycen_down = - self.ycen_up
-        box4 = picmi.warp.Box(zsize=2 * self.l_main_int_z,
-                              xsize=2 * self.l_main_int_x,
-                              ysize=2 * self.l_main_int_y, ycent=self.ycen_up,
+        box4 = picmi.warp.Box(zsize=2 * self.l_main_int_z + 2.e-10,
+                              xsize=2 * self.l_main_int_x + 2.e-10,
+                              ysize=2 * self.l_main_int_y + 2.e-10, ycent=self.ycen_up,
                               condid=condid)
-        box5 = picmi.warp.Box(zsize=2 * self.l_main_int_z,
-                              xsize=2 * self.l_main_int_x,
-                              ysize=2 * self.l_main_int_y, ycent=self.ycen_down,
+        box5 = picmi.warp.Box(zsize=2 * self.l_main_int_z + 2.e-10,
+                              xsize=2 * self.l_main_int_x + 2.e-10,
+                              ysize=2 * self.l_main_int_y + 2.e-10, ycent=self.ycen_down,
                               condid=condid)
 
-        self.y_min_wg = 48.4e-3 + self.disp
-        self.y_max_wg = 96.8e-3 + self.disp
-        self.x_min_wg_rest = -120e-3
-        self.x_max_wg_rest = 120e-3
-        self.x_min_wg = -200e-3
-        self.x_max_wg = 200e-3
-        self.z_rest = -205e-3
-        self.z_max_wg = -self.l_main_z / 2
-        self.z_min_wg = self.zmin*1.2
         self.ycen6 = 0.5 * (self.y_min_wg + self.y_max_wg)
         self.zcen6 = 0.5 * (self.z_rest + self.z_max_wg)
-        box6 = picmi.warp.Box(zsize=self.z_max_wg - self.z_rest,
-                              xsize=self.x_max_wg_rest - self.x_min_wg_rest,
-                              ysize=self.y_max_wg - self.y_min_wg,
+        box6 = picmi.warp.Box(zsize=self.z_max_wg - self.z_rest - 2.e-10,
+                              xsize=self.x_max_wg_rest - self.x_min_wg_rest - 2.e-10,
+                              ysize=self.y_max_wg - self.y_min_wg - 2.e-10,
                               ycent=self.ycen6, zcent=self.zcen6)
         self.ycen7 = 0.5 * (self.y_min_wg + self.y_max_wg)
         self.zcen7 = 0.5 * (self.z_min_wg + self.z_rest)
-        box7 = picmi.warp.Box(zsize=self.z_rest - self.z_min_wg,
-                              xsize=self.x_max_wg - self.x_min_wg,
-                              ysize=self.y_max_wg - self.y_min_wg,
+        box7 = picmi.warp.Box(zsize=self.z_rest - self.z_min_wg + 2.e-10,
+                              xsize=self.x_max_wg - self.x_min_wg - 2.e-10,
+                              ysize=self.y_max_wg - self.y_min_wg - 2.e-10,
                               ycent=self.ycen7, zcent=self.zcen7)
 
         self.conductors = box1 - box2 - box3 + box4 + box5 - box6 - box7
