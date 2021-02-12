@@ -139,10 +139,6 @@ class warp_pyecloud_sim(object):
         self.species_names = ['beam', 'ecloud']
 
         # Instantiate beam
-        self.beam = picmi.Species(particle_type='proton',
-                                  particle_shape='linear',
-                                  name=self.species_names[0], fselfb = self.bunch_centroid_velocity[2])
-        self.flag_first_pass = True
 
         if self.flag_checkpointing and os.path.exists(self.temps_filename):
             self.ecloud = picmi.Species(particle_type='electron',
@@ -161,17 +157,24 @@ class warp_pyecloud_sim(object):
  
             x0, y0, z0, vx0, vy0, vz0, gi0, w0 = self.uniform_density() 
             unif_dist = picmi.ParticleListDistribution(x=x0, y=y0,
-                                                          z=z0, vx=vx0,
-                                                          vy=vy0, vz=vz0,
+                                                          z=z0, ux=vx0/gi0,
+                                                          uy=vy0/gi0, uz=vz0/gi0,
                                                           weight=w0)
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
                                         name=self.species_names[1],
-                                        initial_distribution = unif_dist)            
+                                        initial_distribution = unif_dist)
         else:
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
                                         name=self.species_names[1])
+
+        self.beam = picmi.Species(particle_type='proton',
+                                  particle_shape='linear',
+                                  name=self.species_names[0],
+                                  warp_fselfb = self.bunch_centroid_velocity[2])
+
+
         self.b_pass = 0
         # Setup grid and boundary conditions
         self.dir_bc = ['dirichlet', 'dirichlet', 'dirichlet']
@@ -197,7 +200,7 @@ class warp_pyecloud_sim(object):
 
         if self.solver_type == 'ES':
             self.solver = picmi.ElectrostaticSolver(grid=grid_ES,
-                                                    warp_conductors = conductors,
+                                                    warp_conductors = self.chamber.conductors,
                                                     warp_conductor_dfill = picmi.warp.largepos)
 
         elif self.solver_type == 'EM':
@@ -230,7 +233,8 @@ class warp_pyecloud_sim(object):
                                                       warp_laser_ymin=self.laser_ymin,
                                                       warp_laser_ymax=self.laser_ymax,
                                                       warp_conductors = self.chamber.conductors,
-                                                      warp_conductor_dfill = picmi.warp.largepos)
+                                                      warp_conductor_dfill = picmi.warp.largepos,
+                                                      warp_deposition_species =[self.ecloud.wspecies]) 
             else:
                 self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
                                                       method=self.EM_method, cfl=self.cfl,
@@ -240,12 +244,12 @@ class warp_pyecloud_sim(object):
                                                       warp_l_setcowancoefs=True,
                                                       warp_l_getrho=False,
                                                       warp_conductors = self.chamber.conductors,
-                                                      warp_conductor_dfill = picmi.warp.largepos)            
+                                                      warp_conductor_dfill = picmi.warp.largepos,
+                                                      warp_deposition_species =[self.ecloud.wspecies])     
 
 
         # Setup simulation
         self.sim = picmi.Simulation(solver=self.solver, verbose=1,
-                               cfl=self.cfl,
                                warp_initialize_solver_after_generate=1)
 
         self.sim.add_species(self.beam, layout=None,
@@ -263,25 +267,30 @@ class warp_pyecloud_sim(object):
 
         self.sim.add_species(self.ecloud, layout=self.ecloud_layout,
                         initialize_self_field= self.init_ecloud_fields) 
+
         
         #init_field = self.solver_type=='EM'
-      
-        if self.bunch_macro_particles > 0:
-            picmi.warp.installuserinjection(self.bunched_beam)
+
 
 #        if self.init_num_elecs_mp > 0:
 #            picmi.warp.installuserinjection(self.init_uniform_density)
        
         self.sim.step(1)
-        
+
         if self.tot_nsteps is None and self.n_bunches is not None:
             self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
         if self.tot_nsteps is None and self.t_end is not None:
             self.tot_nsteps = int(np.round(self.t_end / top.dt))
         elif self.tot_nsteps is None and self.n_bunches is None:
             raise Exception('One between n_bunches, tot_nsteps, t_end has to be specified')
-         
-       
+        
+        # needed to be consistent with the conductors
+        self.solver.solver.current_cor = False 
+
+        self.flag_first_pass = True
+
+        if self.bunch_macro_particles > 0:
+            picmi.warp.installuserinjection(self.bunched_beam)     
         # Initialize the EM fields
         # if self.init_em_fields:
         #    em = self.solver.solver
@@ -296,7 +305,7 @@ class warp_pyecloud_sim(object):
         #    em.fields.By = fields['by']*self.em_scale_fac
         #    em.fields.Bz = fields['bz']*self.em_scale_fac      
         #    em.setebp()
-
+       
         # Setup secondary emission stuff       
         self.part_scraper = ParticleScraper(self.chamber.conductors, lsavecondid=1, lsaveintercept=1, lcollectlpdata=1)
 
@@ -309,7 +318,7 @@ class warp_pyecloud_sim(object):
         self.sec.add(incident_species=self.ecloud.wspecies,
                      emitted_species=self.ecloud.wspecies,
                      conductor=self.chamber.conductors)
-
+        
         self.saver = Saver(self.flag_output, self.flag_checkpointing,
                            self.nbins,
                            self.solver, None, temps_filename=self.temps_filename,
@@ -478,7 +487,7 @@ class warp_pyecloud_sim(object):
 
             # Perform a step
             sys.stdout = self.text_trap
-            picmi.warp.step(1)
+            picmi.warp.step()
             sys.stdout = self.original
 
             # Store stuff to be saved
@@ -520,7 +529,7 @@ class warp_pyecloud_sim(object):
         else:
             for i in range(self.n_step, self.tot_nsteps):
                 sys.stdout = self.text_trap
-                picmi.warp.step(1)
+                picmi.warp.step()
                 sys.stdout = self.original
                 if self.flag_output:
                     self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies,
@@ -585,7 +594,6 @@ class warp_pyecloud_sim(object):
         comm.Bcast(gi0, root=0)
 
         w0 = float(self.init_num_elecs) / float(init_num_elecs_mp)
-        
         return x0, y0, z0, vx0, vy0, vz0, gi0, w0
 
     def init_uniform_density(self):
