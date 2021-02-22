@@ -234,7 +234,8 @@ class warp_pyecloud_sim(object):
                                                       warp_laser_ymax=self.laser_ymax,
                                                       warp_conductors = self.chamber.conductors,
                                                       warp_conductor_dfill = picmi.warp.largepos,
-                                                      warp_deposition_species =[self.ecloud.wspecies]) 
+                                                      warp_deposition_species =[self.ecloud.wspecies],
+                                                      warp_iselfb_list = [0]) 
             else:
                 self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
                                                       method=self.EM_method, cfl=self.cfl,
@@ -245,7 +246,8 @@ class warp_pyecloud_sim(object):
                                                       warp_l_getrho=False,
                                                       warp_conductors = self.chamber.conductors,
                                                       warp_conductor_dfill = picmi.warp.largepos,
-                                                      warp_deposition_species =[self.ecloud.wspecies])     
+                                                      warp_deposition_species =[self.ecloud.wspecies],
+                                                      warp_iselfb_list = [0])     
 
 
         # Setup simulation
@@ -280,6 +282,9 @@ class warp_pyecloud_sim(object):
         if self.tot_nsteps is None and self.n_bunches is not None:
             self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
         if self.tot_nsteps is None and self.t_end is not None:
+            self.tot_nsteps = int(np.round(self.t_end / top.dt))
+        # to be fixed
+        if self.t_end is not None:
             self.tot_nsteps = int(np.round(self.t_end / top.dt))
         elif self.tot_nsteps is None and self.n_bunches is None:
             raise Exception('One between n_bunches, tot_nsteps, t_end has to be specified')
@@ -668,9 +673,10 @@ class warp_pyecloud_sim(object):
 
     def dump(self, filename):
         #self.solver.solver.laser_func = None
-        #if hasattr(self, 'laser_func'):
-        #    del self.solver.em3dfft_args['laser_func']
-        #    self.laser_func = None
+        if hasattr(self, 'laser_func'):
+            del self.solver.em3dfft_args['laser_func']
+            self.laser_func = None
+            self.solver.solver.laser_func = None
         self.text_trap = None
         self.original = None
         self.custom_plot = None
