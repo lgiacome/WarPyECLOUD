@@ -265,7 +265,8 @@ class CrabCavityWaveguide:
         self.l_main_y = 240e-3 #242e-3
         self.l_main_x = 300e-3
         self.l_main_z = 354e-3 #350e-3
-        self.l_beam_pipe = 84e-3
+        self.l_beam_pipe = 84e-3 #for y
+        self.l_beam_pipe_x = 80e-3
         self.l_int = 60e-3  #62e-3
         self.l_main_int_y = self.l_main_y - self.l_beam_pipe / 2
         self.l_main_int_z = self.l_main_z / 2 - self.l_int
@@ -288,7 +289,7 @@ class CrabCavityWaveguide:
         self.zmin = z_start - ghost_z
         self.zmax = z_end + ghost_z
 
-        self.z_max_wg = -self.l_main_z / 2
+        self.z_max_wg = -0.98*self.l_main_z / 2 
         self.z_min_wg = self.zmin*1.2
 
         box1 = picmi.warp.Box(zsize=self.zmax - self.zmin,
@@ -296,7 +297,7 @@ class CrabCavityWaveguide:
                               ysize=self.ymax - self.ymin, condid=condid,
                               zcent=0.5 * (self.zmax + self.zmin))
         box2 = picmi.warp.Box(zsize=self.zmax - self.zmin,
-                              xsize=self.l_beam_pipe - 2.e-10,
+                              xsize=self.l_beam_pipe_x - 2.e-10,
                               ysize=self.l_beam_pipe - 2.e-10, condid=condid,
                               zcent=0.5 * (self.zmax + self.zmin))
         box3 = picmi.warp.Box(zsize=self.l_main_z - 2.e-10,
