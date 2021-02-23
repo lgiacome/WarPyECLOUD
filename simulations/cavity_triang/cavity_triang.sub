@@ -1,0 +1,10 @@
+universe = vanilla
+executable = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/cavity_triang/cavity_triang.job
+arguments = ""
+output = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/cavity_triang/cavity_triang.out
+error = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/cavity_triang/cavity_triang.err
+log = /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/cavity_triang/cavity_triang.log
+RequestCpus = 10
+transfer_output_files = ""
++MaxRuntime = 172800
+queue

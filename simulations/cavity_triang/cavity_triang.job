@@ -1,0 +1,33 @@
+#!/bin/bash
+
+PYECLOUDPATH=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/PySTUFF
+WARPYECLOUDPATH=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD
+CURRDIR=/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/WarPyECLOUD/simulations/cavity_triang
+export CURRDIR
+
+source /afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/venvs/py3/bin/activate
+which python
+
+PYTHONPATH=$PYECLOUDPATH
+PYTHONPATH=$PYTHONPATH:$WARPYECLOUDPATH
+export PYTHONPATH
+echo $PYTHONPATH
+
+# Copy input and executable
+
+cp ${CURRDIR}/cavity_triang.py .
+cp ${CURRDIR}/simple_DQW.msh .
+
+#execute beam generation
+export NCPUS=${NCPUS:-10}
+/afs/cern.ch/user/l/lgiacome/sim_workspace_mpi_py3/openmpi/bin/mpiexec -np $NCPUS python cavity_triang.py -p 1 1 $NCPUS
+
+tar -cf cavity_triang_imgs.tar.gz cavity_triang_imgs
+
+#save result
+cp cavity_triang_imgs.tar.gz /eos/user/l/lgiacome/consistent_crab_cavity_scan/results/cavity_triang_imgs.tar.gz
+
+#save result
+cp cavity_triang_temp.h5 ${CURRDIR}
+cp cavity_triang_out.h5 ${CURRDIR}
+cp probe.h5 ${CURRDIR}
