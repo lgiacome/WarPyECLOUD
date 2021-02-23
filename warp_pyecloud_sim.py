@@ -589,7 +589,7 @@ class warp_pyecloud_sim(object):
     def init_uniform_density(self):
         pwt = picmi.warp.top
         if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt) and (pwt.time - self.t_inject_elec) > 0:
-            x0, y0, z0, vx0, vy0, vz0, gi0, w0 = self.unif_dist()
+            x0, y0, z0, vx0, vy0, vz0, gi0, w0 = self.uniform_density()
 
             self.ecloud.wspecies.addparticles(x=x0, y=y0, z=z0, vx=vx0,
                                               vy=vy0, vz=vz0, gi=gi0,
