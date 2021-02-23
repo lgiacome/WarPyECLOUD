@@ -62,7 +62,8 @@ class warp_pyecloud_sim(object):
                          'temps_filename': 'temp_mps_info.h5',
                          'custom_plot': None, 'images_dir': None,
                          'field_probes': [], 'field_probes_dump_stride': 1000,
-                         'probe_filename': 'probe.h5'
+                         'probe_filename': 'probe.h5',
+                         'flag_save_ek_impacts': False
                          }
 
     __simulation_inputs__ = {'enable_trap': True,
@@ -312,10 +313,11 @@ class warp_pyecloud_sim(object):
         
         self.saver = Saver(self.flag_output, self.flag_checkpointing,
                            self.nbins,
-                           self.solver, None, temps_filename=self.temps_filename,
+                           self.solver, self.sec, temps_filename=self.temps_filename,
                            output_filename=self.output_filename,
                            probe_filename = self.probe_filename,
-                           tot_nsteps = self.tot_nsteps, n_bunches = self.n_bunches)
+                           tot_nsteps = self.tot_nsteps, n_bunches = self.n_bunches,
+                           flag_save_ek_impacts = self.flag_save_ek_impacts)
 
 
         self.ntsteps_p_bunch = int(np.round(self.b_spac / top.dt))

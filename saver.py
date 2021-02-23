@@ -8,7 +8,10 @@ from time import sleep
 class Saver:
 
     def __init__(self, flag_output, flag_checkpointing,
-                 nbins, solver, sec, output_filename= None, temps_filename = None, probe_filename = 'probe.h5', tot_nsteps = 1, n_bunches = 1):
+                 nbins, solver, sec, output_filename= None,
+                 temps_filename = None, probe_filename = 'probe.h5',
+                 tot_nsteps = 1, n_bunches = 1, flag_save_ek_impacts = False):
+
         self.flag_checkpointing = flag_checkpointing
         self.flag_output = flag_output
         self.temps_filename = temps_filename
@@ -22,7 +25,8 @@ class Saver:
             self.init_empty_outputs(tot_nsteps, n_bunches)
             if os.path.exists(self.temps_filename):
                 self.restore_outputs_from_file()
-        #self.sec = sec
+        self.sec = sec
+        self.flag_save_ek_impacts = flag_save_ek_impacts
 
     @staticmethod
     def save_h5_safe(dict_out, filename, serial=False):
@@ -119,8 +123,9 @@ class Saver:
         dict_out['xhist'] = self.xhist
         dict_out['tt'] = self.tt
         #dict_out['costhav'] = self.sec.costhav
-        #dict_out['ek0av'] = self.sec.ek0av
-        #dict_out['t_imp'] = self.sec.htime
+        if self.flag_save_ek_impacts:
+            dict_out['ek0av'] = self.sec.ek0av
+            dict_out['t_imp'] = self.sec.htime
         if picmi.warp.me == 0:
             self.save_h5_safe(dict_out, self.output_filename, serial=True)
         #dict_to_h5(dict_out, self.output_filename)
