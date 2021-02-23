@@ -8,6 +8,8 @@ import PyECLOUD.myfilemanager as mfm
 import PyECLOUD.sec_emission_model_ECLOUD as seec
 # Warp imports
 from warp import picmi, top, time, ParticleScraper, registersolver, pprint
+from warp import w3d, top
+from warp.init_tools import initialize_beam_fields
 from warp import dump as warpdump
 from warp.particles.Secondaries import Secondaries
 # Numpy/Matplotlib imports
@@ -145,6 +147,7 @@ class warp_pyecloud_sim(object):
                                         particle_shape='linear',
                                         name=self.species_names[1],
                                         initial_distribution=self.load_elec_density())
+        '''
         elif self.t_inject_elec == 0:
             
             lower_bound = self.chamber.lower_bound
@@ -164,6 +167,7 @@ class warp_pyecloud_sim(object):
                                         particle_shape='linear',
                                         name=self.species_names[1],
                                         initial_distribution = unif_dist)
+        '''
         else:
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
@@ -267,17 +271,20 @@ class warp_pyecloud_sim(object):
                                                #int(self.init_num_elecs_mp/tot_cells), 
                                                #int(self.init_num_elecs_mp/tot_cells)]))
 
-        self.sim.add_species(self.ecloud, layout=self.ecloud_layout,
-                        initialize_self_field= self.init_ecloud_fields) 
+        self.sim.add_species(self.ecloud, layout=self.ecloud_layout)
+#                        initialize_self_field= self.init_ecloud_fields) 
 
         
         #init_field = self.solver_type=='EM'
-
-
-#        if self.init_num_elecs_mp > 0:
-#            picmi.warp.installuserinjection(self.init_uniform_density)
        
         self.sim.step(1)
+
+        if self.init_num_elecs_mp > 0:
+            if self.t_inject_elec == 0:
+                self.init_uniform_density()        
+            else:
+                picmi.warp.installuserinjection(self.init_uniform_density)
+
 
         if self.tot_nsteps is None and self.n_bunches is not None:
             self.tot_nsteps = int(np.round(self.b_spac*(self.n_bunches)/top.dt))
@@ -602,12 +609,15 @@ class warp_pyecloud_sim(object):
         return x0, y0, z0, vx0, vy0, vz0, gi0, w0
 
     def init_uniform_density(self):
-        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt) and (pwt.time - self.t_inject_elec) > 0 and self.t_inject_elec!=0:
+        if np.isclose(pwt.time, self.t_inject_elec, rtol=0, atol=pwt.dt) and (pwt.time - self.t_inject_elec) > 0:
             x0, y0, z0, vx0, vy0, vz0, gi0, w0 = self.unif_dist()
 
             self.ecloud.wspecies.addparticles(x=x0, y=y0, z=z0, vx=vx0,
                                               vy=vy0, vz=vz0, gi=gi0,
                                               w=w0)
+            if init_ecloud_fields:
+                initialize_beam_fields(solver.solver, '3d', elecs.wspecies, w3d, top)
+
             print('injected %d electrons' % np.sum(self.ecloud.wspecies.getw()))
             print('injected %d MPs' % self.ecloud.wspecies.getn())
 
