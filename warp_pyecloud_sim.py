@@ -146,28 +146,7 @@ class warp_pyecloud_sim(object):
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
                                         name=self.species_names[1],
-                                        initial_distribution=self.load_elec_density())
-        '''
-        elif self.t_inject_elec == 0:
-            
-            lower_bound = self.chamber.lower_bound
-            upper_bound = self.chamber.upper_bound
-            vol = np.prod(np.array(upper_bound) - np.array(lower_bound))
-            dens = self.init_num_elecs/vol           
-            #unif_dist = picmi.UniformDistribution(dens,
-            #                                      lower_bound = lower_bound,
-            #                                      upper_bound = upper_bound) 
- 
-            x0, y0, z0, vx0, vy0, vz0, gi0, w0 = self.uniform_density() 
-            unif_dist = picmi.ParticleListDistribution(x=x0, y=y0,
-                                                          z=z0, ux=vx0/gi0,
-                                                          uy=vy0/gi0, uz=vz0/gi0,
-                                                          weight=w0)
-            self.ecloud = picmi.Species(particle_type='electron',
-                                        particle_shape='linear',
-                                        name=self.species_names[1],
-                                        initial_distribution = unif_dist)
-        '''
+                                        initial_distribution=self.load_elec_density()) 
         else:
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
