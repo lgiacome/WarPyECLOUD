@@ -594,7 +594,7 @@ class warp_pyecloud_sim(object):
             self.ecloud.wspecies.addparticles(x=x0, y=y0, z=z0, vx=vx0,
                                               vy=vy0, vz=vz0, gi=gi0,
                                               w=w0)
-            if init_ecloud_fields:
+            if self.init_ecloud_fields:
                 initialize_beam_fields(solver.solver, '3d', elecs.wspecies, w3d, top)
 
             print('injected %d electrons' % np.sum(self.ecloud.wspecies.getw()))
