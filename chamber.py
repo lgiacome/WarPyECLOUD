@@ -376,26 +376,26 @@ class Triangulation:
         Ntri = np.shape(triangles2points)[0]
         triangles = self.points[triangles2points].transpose(2, 1, 0)
    
-        self.xmin =  np.min(self.points[:, 0]) - ghost_x
-        self.xmax = np.max(self.points[:, 0]) + ghost_x
-        self.ymin = np.min(self.points[:, 1]) - ghost_y
-        self.ymax = np.max(self.points[:, 1]) + ghost_y
+        self.xmin =  np.min(self.points[:, 0]) + ghost_x
+        self.xmax = np.max(self.points[:, 0]) - ghost_x
+        self.ymin = np.min(self.points[:, 1]) + ghost_y
+        self.ymax = np.max(self.points[:, 1]) - ghost_y
         #self.xmin = -200e-3 - ghost_x
         #self.xmax = -self.xmin
         #self.ymin = -242e-3 / 2 - ghost_y
         #self.ymax = -self.ymin
-        self.zmin = np.min(self.points[:, 2]) - ghost_z
-        self.zmax = np.max(self.points[:, 2]) + ghost_z
+        self.zmin = np.min(self.points[:, 2]) + ghost_z
+        self.zmax = np.max(self.points[:, 2]) - ghost_z
 
         self.conductors = picmi.warp.Triangles(triangles, condid=condid)
 
-        self.lower_bound = [np.min(self.points[:, 0]), np.min(self.points[:, 1]), -0.2] #np.min(self.points[:, 2])]
-        self.upper_bound = [np.max(self.points[:, 0]), np.max(self.points[:, 1]), 0.2] #np.max(self.points[:, 2])]
+        self.lower_bound = [0.97*np.min(self.points[:, 0]), 0.97*np.min(self.points[:, 1]), -0.2] #np.min(self.points[:, 2])]
+        self.upper_bound = [0.97*np.max(self.points[:, 0]), 0.97*np.max(self.points[:, 1]), 0.2] #np.max(self.points[:, 2])]
         #self.lower_bound = [self.xmin, self.ymin, self.zmin]
         #self.upper_bound = [self.xmax, self.ymax, self.zmax]
         #self.lower_bound = [-0.05, -0.1, -0.2]
         #self.upper_bound = -np.array([-0.05, -0.1, -0.2])
-        self.z_inj_beam = np.min(self.points[:, 2]) + 1e-4
+        self.z_inj_beam = self.zmin + 3e-3
 
     def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
