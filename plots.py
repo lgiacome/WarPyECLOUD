@@ -117,7 +117,7 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber, 
 def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
     (Nx, Ny, Nz) = np.shape(ff)
     pw = picmi.warp
-    fig, axs = plt.subplots(1, 2, figsize = (12, 4.5))
+    fig, axs = plt.subplots(1, 3, figsize = (15, 4.5))
     fig.subplots_adjust(left = 0.05, bottom = 0.1, right = 0.97, 
                         top = 0.94, wspace = 0.15)
     #d = (self.ecloud.wspecies.get_density()
@@ -143,12 +143,22 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
     axs[1].set_xlabel('z [m]')
     axs[1].set_ylabel('y [m]')
     axs[1].set_title(ffstr)
-    plt.suptitle
+    fig.colorbar(im2, ax = axs[1])
+    im3 = axs[2].imshow(ff[:, int(Ny/2), :], cmap = 'jet',
+                        origin = 'lower',
+                        vmin = mine,
+                        vmax = maxe,
+                        extent=[chamber.xmin, chamber.xmax,
+                                chamber.zmin, chamber.zmax],
+                        aspect = 'auto')
+    axs[2].set_xlabel('z [m]')
+    axs[2].set_ylabel('x [m]')
+    axs[2].set_title(ffstr)
+    fig.colorbar(im2, ax = axs[2])
     if not os.path.exists(images_dir):
         os.mkdir(images_dir)
     if not os.path.exists(images_dir + '/' + ffstr):
         os.mkdir(images_dir + '/' + ffstr)
-    fig.colorbar(im2, ax = axs[1])
     figname = images_dir +'/'+ ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
     #figname = self.images_dir + '/%d.png' %int(self.n_step)
     fig.suptitle(ffstr + ', t = %1.6e' %pw.top.time )
