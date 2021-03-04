@@ -148,8 +148,8 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
                         origin = 'lower',
                         vmin = mine,
                         vmax = maxe,
-                        extent=[chamber.xmin, chamber.xmax,
-                                chamber.zmin, chamber.zmax],
+                        extent=[chamber.zmin, chamber.zmax,
+                                chamber.xmin, chamber.xmax],
                         aspect = 'auto')
     axs[2].set_xlabel('z [m]')
     axs[2].set_ylabel('x [m]')
