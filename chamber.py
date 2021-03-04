@@ -364,7 +364,7 @@ class CrabCavityWaveguide:
 
 class Triangulation:
     def __init__(self, filename, ghost_x=20e-3, ghost_y=20e-3, ghost_z=20e-3,
-                 condid=1):
+                 condid=1, nz = 0):
         import meshio
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -376,10 +376,10 @@ class Triangulation:
         Ntri = np.shape(triangles2points)[0]
         triangles = self.points[triangles2points].transpose(2, 1, 0)
    
-        self.xmin =  np.min(self.points[:, 0]) + ghost_x
-        self.xmax = np.max(self.points[:, 0]) - ghost_x
-        self.ymin = np.min(self.points[:, 1]) + ghost_y
-        self.ymax = np.max(self.points[:, 1]) - ghost_y
+        self.xmin =  np.min(self.points[:, 0]) - ghost_x
+        self.xmax = np.max(self.points[:, 0]) + ghost_x
+        self.ymin = np.min(self.points[:, 1]) - ghost_y
+        self.ymax = np.max(self.points[:, 1]) + ghost_y
         #self.xmin = -200e-3 - ghost_x
         #self.xmax = -self.xmin
         #self.ymin = -242e-3 / 2 - ghost_y
@@ -395,7 +395,8 @@ class Triangulation:
         #self.upper_bound = [self.xmax, self.ymax, self.zmax]
         #self.lower_bound = [-0.05, -0.1, -0.2]
         #self.upper_bound = -np.array([-0.05, -0.1, -0.2])
-        self.z_inj_beam = self.zmin + 3e-3
+        dz = (self.zmax-self.zmin)/nz
+        self.z_inj_beam = self.zmin + dz
 
     def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
