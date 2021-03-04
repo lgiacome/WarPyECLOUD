@@ -361,6 +361,59 @@ class CrabCavityWaveguide:
         return np.logical_not(np.logical_or.reduce([flag_in_core, flag_in_pipe_r,
                                                     flag_in_pipe_l]))
 
+class CrabCavityRound:
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0):
+        self.ghost_x = ghost_x
+        self.ghost_y = ghost_y
+        self.ghost_z = ghost_z
+
+        self.xmin =  -0.2 - ghost_x
+        self.xmax = 0.2 + ghost_x
+        self.ymin = -0.2 - ghost_y
+        self.ymax = 0.2 + ghost_y
+        self.zmin = -0.3 - ghost_z
+        self.zmax = 0.3 + ghost_z
+
+        L_int_x = 0.07
+        L_int_y = 0.104
+        ell = L_int_x/L_int_y
+#ell = 1/ell
+        h_up = h_down = 0.1
+
+        L_out_z = 0.141/ell
+        L_slope_out = 0.02/ell
+        L_int_z = 0.07/ell
+        L_slope_int = 0.0267/ell
+        cylbody_up = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_out_z,
+                                              r_ymax = L_out_z + L_slope_out,
+                                              length=0.284/2, ycent = 0.284/4)
+        cylbody_down = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_out_z,
+                                                r_ymin = L_out_z + L_slope_out,
+                                                length=0.284/2, ycent = -0.284/4)
+
+        cylup = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_int_z,
+                                         r_ymax = L_int_z + L_slope_int,
+                                         length=h_up, ycent = 0.5*(0.042 + 0.142))
+        cyldown = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_int_z,
+                                           r_ymin = L_int_z + L_slope_int, length=h_down,
+                                           ycent = -0.5*(0.042 + 0.142))
+
+        cyl = picmi.warp.ZCylinder(radius=0.042, length=1.1*(self.zmax-self.zmin))
+        box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
+        self.conductors = box - cylbody_up - cylbody_down  + cylup + cyldown - cyl
+#cone = picmi.warp.XConeElliptic(ellipticity=ell, r_xmin=L_int_x, r_xmax=L_int_x, length=h_up)
+
+        self.lower_bound = [-0.16, -0.15, -0.25]
+        self.upper_bound = [0.16, 0.15, 0.25]
+
+        if nz > 0:
+            dz = (self.zmax-self.zmin)/nz
+        else:
+            dz = 0
+        self.z_inj_beam = self.zmin + dz
+
+    def is_outside(self, xx, yy, zz):
+        return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
 
 class Triangulation:
     def __init__(self, filename, ghost_x=20e-3, ghost_y=20e-3, ghost_z=20e-3,
@@ -395,7 +448,10 @@ class Triangulation:
         #self.upper_bound = [self.xmax, self.ymax, self.zmax]
         #self.lower_bound = [-0.05, -0.1, -0.2]
         #self.upper_bound = -np.array([-0.05, -0.1, -0.2])
-        dz = (self.zmax-self.zmin)/nz
+        if nz > 0:
+            dz = (self.zmax-self.zmin)/nz
+        else:
+            dz = 0
         self.z_inj_beam = self.zmin + dz
 
     def is_outside(self, xx, yy, zz):
