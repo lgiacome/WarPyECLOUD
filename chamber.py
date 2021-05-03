@@ -361,6 +361,115 @@ class CrabCavityWaveguide:
         return np.logical_not(np.logical_or.reduce([flag_in_core, flag_in_pipe_r,
                                                     flag_in_pipe_l]))
 
+class CrabCavityRoundCyl:
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0):
+        self.ghost_x = ghost_x
+        self.ghost_y = ghost_y
+        self.ghost_z = ghost_z
+
+        self.xmin =  -0.2 - ghost_x
+        self.xmax = 0.2 + ghost_x
+        self.ymin = -0.2 - ghost_y
+        self.ymax = 0.2 + ghost_y
+        self.zmin = -0.3 - ghost_z
+        self.zmax = 0.3 + ghost_z
+
+        L_int_x = 0.07
+        L_int_y = 0.104
+        ell = L_int_x/L_int_y
+#ell = 1/ell
+        h_up = h_down = 0.1
+
+        L_out_z = 0.141/ell
+        L_slope_out = 0.02/ell
+        L_int_z = 0.07/ell
+        L_slope_int = 0.0267/ell
+        cylbody = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_out_z,
+                                              length=0.284/2, ycent = 0.284/4)
+
+        cylup = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_int_z,
+                                         length=h_up, ycent = 0.5*(0.042 + 0.142))
+        cyldown = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_int_z,
+                                           length=h_down,
+                                           ycent = -0.5*(0.042 + 0.142))
+
+        cylbody = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_out_z,
+                                                length=0.284)
+
+        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower = 1.05*self.zmin, zupper = -0.18)
+        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper = 1.05*self.zmax, zlower = 0.18)
+        box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
+        self.conductors = box - cylbody  + cylup + cyldown - cyl_l - cyl_r
+#cone = picmi.warp.XConeElliptic(ellipticity=ell, r_xmin=L_int_x, r_xmax=L_int_x, length=h_up)
+
+        self.lower_bound = [-0.16, -0.15, -0.25]
+        self.upper_bound = [0.16, 0.15, 0.25]
+
+        if nz > 0:
+            dz = (self.zmax-self.zmin)/nz
+        else:
+            dz = 0
+        self.z_inj_beam = self.zmin + dz
+
+    def is_outside(self, xx, yy, zz):
+        return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
+
+
+class CrabCavityRoundCone:
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0):
+        self.ghost_x = ghost_x
+        self.ghost_y = ghost_y
+        self.ghost_z = ghost_z
+
+        self.xmin =  -0.2 - ghost_x
+        self.xmax = 0.2 + ghost_x
+        self.ymin = -0.2 - ghost_y
+        self.ymax = 0.2 + ghost_y
+        self.zmin = -0.3 - ghost_z
+        self.zmax = 0.3 + ghost_z
+
+        L_int_x = 0.07
+        L_int_y = 0.104
+        ell = L_int_x/L_int_y
+#ell = 1/ell
+        h_up = h_down = 0.1
+
+        L_out_z = 0.141/ell
+        L_slope_out = 0.02/ell
+        L_int_z = 0.07/ell
+        L_slope_int = 0.0267/ell
+        conebody_up = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_out_z,
+                                              r_ymax = L_out_z + L_slope_out,
+                                              length=0.284/2, ycent = 0.284/4)
+        conebody_down = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_out_z,
+                                                r_ymin = L_out_z + L_slope_out,
+                                                length=0.284/2, ycent = -0.284/4)
+
+        coneup = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_int_z,
+                                         r_ymax = L_int_z + L_slope_int,
+                                         length=h_up, ycent = 0.5*(0.042 + 0.142))
+        conedown = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_int_z,
+                                           r_ymin = L_int_z + L_slope_int, length=h_down,
+                                           ycent = -0.5*(0.042 + 0.142))
+
+
+
+        box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
+
+        self.conductors = box - conebody_up - conebody_down  + coneup + conedown - cyl_l - cyl_r
+
+        self.lower_bound = [-0.16, -0.15, -0.25]
+        self.upper_bound = [0.16, 0.15, 0.25]
+
+        if nz > 0:
+            dz = (self.zmax-self.zmin)/nz
+        else:
+            dz = 0
+        self.z_inj_beam = self.zmin + dz
+
+    def is_outside(self, xx, yy, zz):
+        return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
+
 class CrabCavityRound:
     def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0):
         self.ghost_x = ghost_x
@@ -384,28 +493,25 @@ class CrabCavityRound:
         L_slope_out = 0.02/ell
         L_int_z = 0.07/ell
         L_slope_int = 0.0267/ell
-        cylbody_up = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_out_z,
-                                              r_ymax = L_out_z + L_slope_out,
-                                              length=0.284/2, ycent = 0.284/4)
-        cylbody_down = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_out_z,
-                                                r_ymin = L_out_z + L_slope_out,
-                                                length=0.284/2, ycent = -0.284/4)
 
-        cylup = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_int_z,
-                                         r_ymax = L_int_z + L_slope_int,
-                                         length=h_up, ycent = 0.5*(0.042 + 0.142))
-        cyldown = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_int_z,
-                                           r_ymin = L_int_z + L_slope_int, length=h_down,
-                                           ycent = -0.5*(0.042 + 0.142))
+        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower = 1.05*self.zmin, zupper = -0.18)
+        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper = 1.05*self.zmax, zlower = 0.18)
 
-        cyl = picmi.warp.ZCylinder(radius=0.042, length=1.1*(self.zmax-self.zmin))
+        rminofzdata = [L_int_z+L_slope_int, L_int_z, L_int_z, L_int_z+L_slope_int]
+        zmindata = [-0.284/2, -0.042,  0.042, 0.284/2]
+        rmaxofzdata = [L_out_z+L_slope_out, L_out_z, L_out_z+L_slope_out]
+        zmaxdata = [-0.284/2, 0, 0.284/2]
+        bodyCC_rev = picmi.warp.YSrfrvEllipticInOut(ellipticity=ell, rminofydata=rminofzdata, rmaxofydata=rmaxofzdata, ymindata=zmindata, ymaxdata=zmaxdata)
+        bodyCC_cyl = picmi.warp.YCylinderElliptic(ellipticity = ell, radius=L_int_z, length = 0.084)
+        bodyCC= bodyCC_rev + bodyCC_cyl
+
         box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
-        self.conductors = box - cylbody_up - cylbody_down  + cylup + cyldown - cyl
-#cone = picmi.warp.XConeElliptic(ellipticity=ell, r_xmin=L_int_x, r_xmax=L_int_x, length=h_up)
+        self.conductors = box - bodyCC - cyl_l - cyl_r #cylup + cyldown #+ (box - bodyCC)
 
-        self.lower_bound = [-0.16, -0.15, -0.25]
-        self.upper_bound = [0.16, 0.15, 0.25]
-
+        #self.lower_bound = [-0.16, -0.15, -0.25]
+        #self.upper_bound = [0.16, 0.15, 0.25]
+        self.lower_bound = np.array([self.xmin, self.ymin, self.zmin])
+        self.upper_bound = np.array([self.xmax, self.ymax, self.zmax])
         if nz > 0:
             dz = (self.zmax-self.zmin)/nz
         else:
