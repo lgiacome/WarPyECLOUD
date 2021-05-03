@@ -20,13 +20,14 @@ class Saver:
         self.nbins = nbins
         self.output_filename = output_filename
         self.solver = solver
+        self.sec = sec
+        self.flag_save_ek_impacts = flag_save_ek_impacts       
         self.probe_filename = probe_filename
         if self.flag_output:
             self.init_empty_outputs(tot_nsteps, n_bunches)
             if os.path.exists(self.temps_filename):
                 self.restore_outputs_from_file()
-        self.sec = sec
-        self.flag_save_ek_impacts = flag_save_ek_impacts
+
 
     @staticmethod
     def save_h5_safe(dict_out, filename, serial=False):
@@ -69,7 +70,11 @@ class Saver:
                 self.xhist.append(xhist)
             self.bins = dict_init_dist['bins']
             self.tt.append(dict_init_dist['tt']) 
-    
+            if self.flag_save_ek_impacts:
+                self.sec.ek0av.append(dict_init_dist['ek0av'])
+                self.sec.power_diff.append(dict_init_dist['power_diff'])
+                self.sec.htime.append(dict_init_dist['t_imp'])
+ 
     def save_checkpoint(self, b_pass, elecbw):
         dict_out_temp = {}
         print('Saving a checkpoint!')
@@ -82,11 +87,16 @@ class Saver:
         dict_out_temp['nel_mp'] = elecbw.getw()
         if self.flag_output:
             dict_out_temp['numelecs'] = self.numelecs
+            dict_out_temp['tt'] = self.numelecs
             dict_out_temp['numpro'] = self.numpro
             dict_out_temp['numelecs_tot'] = self.numelecs_tot
             dict_out_temp['N_mp'] = self.N_mp
             dict_out_temp['xhist'] = self.xhist
             dict_out_temp['bins'] = self.bins
+            if self.flag_save_ek_impacts:
+                dict_out_temp['ek0av'] = self.sec.ek0av
+                dict_out_temp['power_diff'] = self.sec.power_diff
+                dict_out_temp['t_imp'] = self.sec.htime
 
         dict_out_temp['b_pass'] = b_pass 
         dict_out_temp['ecloud_density'] = elecbw.get_density()
@@ -125,6 +135,7 @@ class Saver:
         #dict_out['costhav'] = self.sec.costhav
         if self.flag_save_ek_impacts:
             dict_out['ek0av'] = self.sec.ek0av
+            dict_out['power_diff'] = self.sec.power_diff
             dict_out['t_imp'] = self.sec.htime
         if picmi.warp.me == 0:
             self.save_h5_safe(dict_out, self.output_filename, serial=True)
