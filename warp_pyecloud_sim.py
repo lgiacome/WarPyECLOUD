@@ -11,7 +11,7 @@ from warp import picmi, top, time, ParticleScraper, registersolver, pprint
 from warp import w3d, top
 from warp.init_tools import initialize_beam_fields
 from warp import dump as warpdump
-from warp.particles.Secondaries import Secondaries
+from warp.particles.Secondaries import Secondaries, clight
 # Numpy/Matplotlib imports
 import numpy as np
 import numpy.random as random
@@ -142,12 +142,13 @@ class warp_pyecloud_sim(object):
         self.species_names = ['beam', 'ecloud']
 
         # Instantiate beam
-
+        self.elecs_injected = False
         if self.flag_checkpointing and os.path.exists(self.temps_filename):
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
                                         name=self.species_names[1],
-                                        initial_distribution=self.load_elec_density()) 
+                                        initial_distribution=self.load_elec_density())
+            self.elecs_injected = True 
         else:
             self.ecloud = picmi.Species(particle_type='electron',
                                         particle_shape='linear',
@@ -259,9 +260,9 @@ class warp_pyecloud_sim(object):
        
         self.sim.step(1)
 
-        if self.init_num_elecs_mp > 0:
+        if self.init_num_elecs_mp > 0 and (not self.elecs_injected):
             if self.t_inject_elec == 0:
-                self.init_uniform_density()        
+                self.init_uniform_density()
             else:
                 picmi.warp.installuserinjection(self.init_uniform_density)
 
@@ -615,9 +616,12 @@ class warp_pyecloud_sim(object):
         vy0 = dict_init_dist['vy_mp']
         vz0 = dict_init_dist['vz_mp']
         w0 = dict_init_dist['nel_mp']
-
+        beta2 = (vx0**2 + vy0**2 + vz0**2)/(clight**2)
+        gamma = 1/np.sqrt(1-beta2)
         self.b_pass = dict_init_dist['b_pass'] - 1
 
+        return picmi.ParticleListDistribution(x=x0, y=y0, z=z0, ux=vx0*gamma, uy=vy0*gamma, uz=vz0*gamma, weight=w0)
+    
     def gaussian_time_prof(self):
         t = picmi.warp.top.time
         val = 0
