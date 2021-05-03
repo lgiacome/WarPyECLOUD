@@ -131,7 +131,7 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
                                   chamber.ymin, chamber.ymax])
     axs[0].set_xlabel('x [m]')
     axs[0].set_ylabel('y [m]')
-    axs[0].set_title(ffstr)
+#    axs[0].set_title(ffstr)
     fig.colorbar(im1, ax = axs[0])
     im2 = axs[1].imshow(ff[int(Nx/2), :, :], cmap = 'jet', 
                         origin = 'lower', 
@@ -142,7 +142,7 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
                         aspect = 'auto')
     axs[1].set_xlabel('z [m]')
     axs[1].set_ylabel('y [m]')
-    axs[1].set_title(ffstr)
+#    axs[1].set_title(ffstr)
     fig.colorbar(im2, ax = axs[1])
     im3 = axs[2].imshow(ff[:, int(Ny/2), :], cmap = 'jet',
                         origin = 'lower',
@@ -153,7 +153,7 @@ def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir, l_force=0):
                         aspect = 'auto')
     axs[2].set_xlabel('z [m]')
     axs[2].set_ylabel('x [m]')
-    axs[2].set_title(ffstr)
+#    axs[2].set_title(ffstr)
     fig.colorbar(im2, ax = axs[2])
     if not os.path.exists(images_dir):
         os.mkdir(images_dir)
