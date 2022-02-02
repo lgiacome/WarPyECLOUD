@@ -1,5 +1,6 @@
-from warp import picmi
+from warp import picmi, pprint
 import numpy as np
+from h5py_manager import dict_of_arrays_and_scalar_from_h5, dict_of_arrays_and_scalar_from_h5_serial
 
 class Dipole:
     
@@ -150,3 +151,88 @@ class CrabFields:
                             + Fx3d[1:, 0:-1, 1:]
                             + Fx3d[1:, 0:-1, 0:-1])
         return Fxx
+
+
+def data_arraySin(t):
+    freq = 400*1e6
+    phase_disp = 0 #np.pi/2
+    delay = 0
+    return -np.sin((t-delay)*freq*2*np.pi+phase_disp)
+
+def data_arrayCos(t):
+    freq = 400*1e6
+    phase_disp = 0 #np.pi/2
+    delay = 0
+    return np.cos((t-delay)*freq*2*np.pi+phase_disp)
+
+
+class CrabFieldsH5:
+
+    def __init__(self, dt, Tf, max_rescale = None, fields_path = 'fields.h5'):
+        dict_h5 = dict_of_arrays_and_scalar_from_h5_serial(fields_path)
+        self.init_self_from_dict(dict_h5)
+        self.maxE = max_rescale
+        nnx, nny, nnz = np.shape(self.ReEyy)
+        if self.maxE is not None:
+            kk = self.maxE/np.max(abs(self.ReEyy[int((nnx+1)/2),int((nny+1)/2),:]))
+
+            self.ReExx *= kk
+            self.ReEyy *= kk
+            self.ReEzz *= kk
+            self.ImExx *= kk
+            self.ImEyy *= kk
+            self.ImEzz *= kk
+            self.ReBxx *= kk
+            self.ReByy *= kk
+            self.ReBzz *= kk
+            self.ImBxx *= kk
+            self.ImByy *= kk
+            self.ImBzz *= kk
+        freq = 400*1e6
+        Nt = int(Tf/dt)
+        phase_disp = 0 #np.pi/2
+        #delay = (chamber.lower_bound[2])/picmi.clight - t_offs
+        delay = 0
+        time_array = np.linspace(0., Tf, Nt)
+        # Create overlapped lattice elements to have E and B in the same region
+        iReE, ReEgrid = picmi.warp.addnewegrd(self.zs, self.ze,
+                                          dx = self.d, dy = self.d,
+                                          xs = self.xs, ys = self.ys,
+                                          #time = self.time_array,
+                                          func = data_arrayCos,
+                                          ex = self.ReExx,
+                                          ey = self.ReEyy,
+                                          ez = self.ReEzz)
+
+        iImE, ImEgrid = picmi.warp.addnewegrd(self.zs, self.ze,
+                                          dx = self.d, dy = self.d,
+                                          xs = self.xs, ys = self.ys,
+                                          #time = self.time_array,
+                                          func = data_arraySin,
+                                          ex = self.ImExx,
+                                          ey = self.ImEyy,
+                                          ez = self.ImEzz)
+
+        iReB, ReBgrid = picmi.warp.addnewbgrd(self.zs, self.ze,
+                                          dx = self.d, dy = self.d,
+                                          xs = self.xs, ys = self.ys,
+                                          #time = self.time_array,
+                                          func = data_arrayCos,
+                                          bx = self.ReBxx,
+                                          by = self.ReByy,
+                                          bz = self.ReBzz)
+
+        iImB, ImBgrid = picmi.warp.addnewbgrd(self.zs, self.ze,
+                                          dx = self.d, dy = self.d,
+                                          xs = self.xs, ys = self.ys,
+                                          #time = self.time_array,
+                                          func = data_arraySin,
+                                          bx = self.ImBxx,
+                                          by = self.ImByy,
+                                          bz = self.ImBzz)
+
+
+    def init_self_from_dict(self, dic):
+        for name in dic.keys():
+            self.__dict__[name] = dic[name]
+
