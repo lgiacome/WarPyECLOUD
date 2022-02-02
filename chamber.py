@@ -9,12 +9,11 @@ class RectChamber:
     - height: height of the chamber (along y)
     - z_start: z-coordinate of the left bound of the chamber
     - z_end: z-coordinate of the right bound of the chamber
-    - ghost_x: additional length of the domain in x-direction 
-    - ghost_y: additional length of the domain in y-direction
-    - ghost_z: additional length of the domain in z-direction
-    - condid: conductor id (used inside warp for diagnostics)
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
     """
-
     def __init__(self, width, height, z_start, z_end, ghost_x=1e-3,
                  ghost_y=1e-3, ghost_z=1e-3, condid=1):
         print('Using rectangular chamber with xaper: %1.2e, yaper: %1.2e'
@@ -61,9 +60,16 @@ class RectChamber:
 
 
 class LHCChamber:
-
-    def __init__(self, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3,
-                 ghost_z=1e-3, condid=1):
+    """
+    LHC type chamber.
+    - z_start: z-coordinate of the left bound of the chamber
+    - z_end: z-coordinate of the right bound of the chamber
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    """
+    def __init__(self, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3, ghost_z=1e-3, condid=1):
         print('Using the LHC chamber')
 
         self.height = 36e-3
@@ -103,9 +109,17 @@ class LHCChamber:
 
 
 class CircChamber:
-
-    def __init__(self, radius, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3,
-                 ghost_z=1e-3, condid=1):
+    """
+    Circular chamber.
+    - radius: radius of the chamber
+    - z_start: z-coordinate of the left bound of the chamber
+    - z_end: z-coordinate of the right bound of the chamber
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    """
+    def __init__(self, radius, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3, ghost_z=1e-3, condid=1):
         print('Using a circular chamber with radius %1.2e' % radius)
 
         self.radius = radius
@@ -138,9 +152,18 @@ class CircChamber:
 
 
 class EllipChamber:
-
-    def __init__(self, r_x, r_y, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3,
-                 ghost_z=1e-3, condid=1):
+    """
+    Elliptic chamber.
+    - r_x: x semi-axis of the chamber
+    - r_y: y semi-axis of the chamber
+    - z_start: z-coordinate of the left bound of the chamber
+    - z_end: z-coordinate of the right bound of the chamber
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    """
+    def __init__(self, r_x, r_y, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3, ghost_z=1e-3, condid=1):
         print('Using an elliptic chamber chamber with r_x %1.2e and r_y %1.2e' % (r_x, r_y))
 
         self.r_x = r_x
@@ -178,9 +201,16 @@ class EllipChamber:
 
 
 class CrabCavitySquared:
-
-    def __init__(self, z_start, z_end, disp=0, ghost_x=10e-3, ghost_y=10e-3,
-                 ghost_z=1e-3, condid=1):
+    """
+    Squared approximation of the Crab Cavities.
+    - z_start: z-coordinate of the left bound of the chamber
+    - z_end: z-coordinate of the right bound of the chamber
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    """
+    def __init__(self, z_start, z_end, disp=0, ghost_x=10e-3, ghost_y=10e-3, ghost_z=1e-3, condid=1):
         print('Simulating ECLOUD in a consistent crab cavity')
 
         self.z_start = z_start
@@ -265,8 +295,16 @@ class CrabCavitySquared:
                                                     flag_in_pipe_l]))
 
 
-class CrabCavityWaveguide:
-
+class CrabCavitySquaredWaveguide:
+    """
+    Squared approximation of the Crab Cavities with a waveguide to store an antenna.
+    - z_start: z-coordinate of the left bound of the chamber
+    - z_end: z-coordinate of the right bound of the chamber
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    """
     def __init__(self, z_start, z_end, disp=0, ghost_x=10e-3, ghost_y=10e-3,
                  ghost_z=1e-3, condid=1):
         print('Simulating ECLOUD in a consistent crab cavity')
@@ -376,6 +414,14 @@ class CrabCavityWaveguide:
 
 
 class CrabCavityRoundCyl:
+    """
+    Approximation of the Double Quarter Wave Crab Cavity obtained with cylinders.
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    - nz: number of cells in z-direction
+    """
     def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -426,6 +472,14 @@ class CrabCavityRoundCyl:
 
 
 class CrabCavityRoundCone:
+    """
+    Approximation of the Double Quarter Wave Crab Cavity obtained with cones.
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    - nz: number of cells in z-direction
+    """
     def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -483,6 +537,14 @@ class CrabCavityRoundCone:
 
 
 class CrabCavityRound:
+    """
+    Approximation of the Double Quarter Wave Crab Cavity obtained with surface of revolution.
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    - nz: number of cells in z-direction
+    """
     def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -546,7 +608,15 @@ class CrabCavityRound:
 
 
 class SimpleRFD:
-
+    """
+    Approximation of the RF Dipole Crab Cavity obtained with cylinders and box.
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - nz: number of cells in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    - meas_kick: if true the beam pipe is made long enough to measure the kick on the bunch
+    """
     def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz=0, condid=1, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -618,7 +688,15 @@ class SimpleRFD:
 
 
 class SimpleRFDCyl:
-
+    """
+    Approximation of the RF Dipole Crab Cavity obtained with cylinders.
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - nz: number of cells in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    - meas_kick: if true the beam pipe is made long enough to measure the kick on the bunch
+    """
     def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz=0, condid=1, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -680,7 +758,15 @@ class SimpleRFDCyl:
 
 
 class SimpleRFDRot:
-
+    """
+    Approximation of the RF Dipole Crab Cavity obtained with surfaces of revolution.
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - nz: number of cells in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    - meas_kick: if true the beam pipe is made long enough to measure the kick on the bunch
+    """
     def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz=0, condid=1, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -747,8 +833,16 @@ class SimpleRFDRot:
 
 
 class Triangulation:
-    def __init__(self, filename, ghost_x=20e-3, ghost_y=20e-3, ghost_z=20e-3,
-                 condid=1, nz=0):
+    """
+    Chamber described as a triangulation (gmsh file)
+    - filename: name of the gmsh file
+    - ghost_x: padding of the domain in x-direction
+    - ghost_y: padding of the domain in y-direction
+    - ghost_z: padding of the domain in z-direction
+    - condid: conductor id number (used inside warp for diagnostics)
+    - nz: number of cells in z-direction
+    """
+    def __init__(self, filename, ghost_x=20e-3, ghost_y=20e-3, ghost_z=20e-3, condid=1, nz=0):
         import meshio
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
@@ -768,66 +862,13 @@ class Triangulation:
 
         self.conductors = picmi.warp.Triangles(triangles, condid=condid)
 
-        self.lower_bound = [0.97 * np.min(self.points[:, 0]), 0.97 * np.min(self.points[:, 1]),
-                            -0.2]
-        self.upper_bound = [0.97 * np.max(self.points[:, 0]), 0.97 * np.max(self.points[:, 1]),
-                            0.2]
+        self.lower_bound = [0.97 * np.min(self.points[:, 0]), 0.97 * np.min(self.points[:, 1]), -0.2]
+        self.upper_bound = [0.97 * np.max(self.points[:, 0]), 0.97 * np.max(self.points[:, 1]), 0.2]
         if nz > 0:
             dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
 
-        self.z_inj_beam = self.zmin + dz
-
-    def is_outside(self, xx, yy, zz):
-        return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
-
-
-class CrabCavityRoundOld:
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0):
-        self.ghost_x = ghost_x
-        self.ghost_y = ghost_y
-        self.ghost_z = ghost_z
-
-        self.xmin = -0.2 - ghost_x
-        self.xmax = 0.2 + ghost_x
-        self.ymin = -0.2 - ghost_y
-        self.ymax = 0.2 + ghost_y
-        self.zmin = -0.3 - ghost_z
-        self.zmax = 0.3 + ghost_z
-
-        l_int_x = 0.07
-        l_int_y = 0.104
-        ell = l_int_x / l_int_y
-
-        l_out_z = 0.141 / ell
-        l_slope_out = 0.02 / ell
-        l_int_z = 0.07 / ell
-        l_slope_int = 0.0267 / ell
-
-        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower=1.05 * self.zmin, zupper=-0.18)
-        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper=1.05 * self.zmax, zlower=0.18)
-
-        rminofzdata = [l_int_z + l_slope_int, l_int_z, l_int_z, l_int_z + l_slope_int]
-        zmindata = [-0.284 / 2, -0.042, 0.042, 0.284 / 2]
-        rmaxofzdata = [l_out_z + l_slope_out, l_out_z, l_out_z + l_slope_out]
-        zmaxdata = [-0.284 / 2, 0, 0.284 / 2]
-        body_cc_rev = picmi.warp.YSrfrvEllipticInOut(ellipticity=ell, rminofydata=rminofzdata, rmaxofydata=rmaxofzdata,
-                                                     ymindata=zmindata, ymaxdata=zmaxdata, condid=condid)
-
-        body_cc_cyl = picmi.warp.YCylinderElliptic(ellipticity=ell, radius=l_int_z, length=0.084, condid=condid)
-        body_cc = body_cc_rev + body_cc_cyl
-
-        box = picmi.warp.Box(xsize=(self.xmax - self.xmin), ysize=(self.ymax - self.ymin),
-                             zsize=(self.zmax - self.zmin))
-        self.conductors = box - body_cc - cyl_l - cyl_r
-
-        self.lower_bound = np.array([self.xmin, self.ymin, self.zmin])
-        self.upper_bound = -self.lower_bound
-        if nz > 0:
-            dz = (self.zmax - self.zmin) / nz
-        else:
-            dz = 0
         self.z_inj_beam = self.zmin + dz
 
     def is_outside(self, xx, yy, zz):
