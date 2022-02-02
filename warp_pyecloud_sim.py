@@ -31,7 +31,8 @@ class warp_pyecloud_sim(object):
     __fieldsolver_inputs__ = {'nx': None, 'ny': None, 'nz': None,
                               'solver_type': 'ES', 'N_subcycle': None,
                               'EM_method': 'Yee', 'cfl': 1.0, 'dt': None,
-                              'source_smoothing': True}
+                              'source_smoothing': True, 'l_pushf': False,
+                              'l_getrho': False}
 
     __beam_inputs__ = {'n_bunches': None, 'b_spac': None, 'beam_gamma': None,
                        'sigmax': None, 'sigmay': None, 'sigmat': None,
@@ -60,7 +61,7 @@ class warp_pyecloud_sim(object):
                          'nbins': 100, 'radius': None, 'stride_imgs': 10,
                          'stride_output': 1000,
                          'temps_filename': 'temp_mps_info.h5',
-                         'custom_plot': None, 'images_dir': None,
+                         'custom_plot': None, 'images_dir': 'images_dir',
                          'field_probes': [], 'field_probes_dump_stride': 1000,
                          'probe_filename': 'probe.h5',
                          'flag_save_ek_impacts': False
@@ -208,7 +209,7 @@ class warp_pyecloud_sim(object):
                                                       warp_l_correct_num_Cherenkov=False,
                                                       warp_type_rz_depose=0,
                                                       warp_l_setcowancoefs=True,
-                                                      warp_l_getrho=False,
+                                                      warp_l_getrho=self.l_getrho,
                                                       warp_laser_func=self.laser_func,
                                                       warp_laser_source_z=self.laser_source_z,
                                                       warp_laser_polangle=self.laser_polangle,
@@ -220,7 +221,8 @@ class warp_pyecloud_sim(object):
                                                       warp_conductors = self.chamber.conductors,
                                                       warp_conductor_dfill = picmi.warp.largepos,
                                                       warp_deposition_species =[self.ecloud.wspecies],
-                                                      warp_iselfb_list = [0]) 
+                                                      warp_iselfb_list = [0],
+                                                      warp_l_pushf = self.l_pushf) 
             else:
                 self.solver = picmi.ElectromagneticSolver(grid=self.grid_EM,
                                                       method=self.EM_method, cfl=self.cfl,
@@ -228,11 +230,12 @@ class warp_pyecloud_sim(object):
                                                       warp_l_correct_num_Cherenkov=False,
                                                       warp_type_rz_depose=0,
                                                       warp_l_setcowancoefs=True,
-                                                      warp_l_getrho=False,
+                                                      warp_l_getrho=self.l_getrho,
                                                       warp_conductors = self.chamber.conductors,
                                                       warp_conductor_dfill = picmi.warp.largepos,
                                                       warp_deposition_species =[self.ecloud.wspecies],
-                                                      warp_iselfb_list = [0])     
+                                                      warp_iselfb_list = [0],
+                                                      warp_l_pushf = self.l_pushf)     
 
 
         # Setup simulation
@@ -487,7 +490,7 @@ class warp_pyecloud_sim(object):
             # Store stuff to be saved
             if self.flag_output:
                 self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies, self.nz,
-                                          self.n_step)
+                                          self.ny, self.nz, self.n_step, self.chamber)
 
             if self.n_step > self.tot_nsteps:
                 # Timer
@@ -509,8 +512,8 @@ class warp_pyecloud_sim(object):
                 picmi.warp.step(1)
                 sys.stdout = self.original
                 if self.flag_output:
-                    self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies, 
-                                                self.nz, self.n_step)
+                    self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies, self.nz,
+                                              self.ny, self.nz, self.n_step, self.chamber)
                 if self.flag_output and self.n_step % self.stride_output == 0:
                     self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax, self.ecloud.wspecies, self.b_pass)
                 # Perform regeneration if needed
@@ -526,8 +529,8 @@ class warp_pyecloud_sim(object):
                 picmi.warp.step()
                 sys.stdout = self.original
                 if self.flag_output:
-                    self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies,
-                                              self.nz, self.n_step)
+                    self.saver.update_outputs(self.ecloud.wspecies, self.beam.wspecies, self.nz,
+                                              self.ny, self.nz, self.n_step, self.chamber)
                 if self.flag_output and self.n_step % self.stride_output == 0:
                     self.saver.dump_outputs(self.chamber.xmin, self.chamber.xmax, self.ecloud.wspecies, self.b_pass)
                 # Perform regeneration if needed
@@ -598,7 +601,10 @@ class warp_pyecloud_sim(object):
                                               vy=vy0, vz=vz0, gi=gi0,
                                               w=w0)
             if self.init_ecloud_fields:
+                old_grid_overlap = top.grid_overlap 
+                top.grid_overlap = 1
                 initialize_beam_fields(self.solver.solver, '3d', self.ecloud.wspecies, w3d, top)
+                top.grid_overlap = old_grid_overlap
 
             print('injected %d electrons' % np.sum(self.ecloud.wspecies.getw()))
             print('injected %d MPs' % self.ecloud.wspecies.getn())
