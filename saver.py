@@ -52,12 +52,15 @@ class Saver:
     def init_empty_outputs(self, tot_nsteps = 1, n_bunches = 1):
         self.numelecs = AppendableArray(initlen = tot_nsteps, typecode='d')
         self.numelecs_tot = AppendableArray(initlen = tot_nsteps, typecode='d')
+        self.numelecs_body_cav =  AppendableArray(initlen = tot_nsteps, typecode='d')
         self.numpro = AppendableArray(initlen = tot_nsteps, typecode='d')
         self.N_mp = AppendableArray(initlen = tot_nsteps, typecode='d')
         if self.n_bunches is not None:
             self.xhist = AppendableArray(initlen = n_bunches, typecode = 'd', unitshape = (1,self.nbins))
         self.bins = np.zeros(self.nbins)
         self.tt = AppendableArray(initlen = tot_nsteps, typecode='d')
+
+        self.ex_applied = AppendableArray(initlen = tot_nsteps, typecode='d')
 
     def restore_outputs_from_file(self):
         dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
@@ -103,7 +106,7 @@ class Saver:
         if picmi.warp.me == 0:
             self.save_h5_safe(dict_out_temp, self.temps_filename, serial=True)
 
-    def update_outputs(self, ew, bw, nz, n_step):
+    def update_outputs(self, ew, bw, nx, ny, nz, n_step, chamber):
         elecb_w = ew.getw()
         elecs_density = ew.get_density(l_dividebyvolume=0)[:,:,int(nz/2.)]
         elecs_density_tot = ew.get_density(l_dividebyvolume=0)[:,:,:]
@@ -111,14 +114,28 @@ class Saver:
         self.numelecs.append(np.sum(elecs_density))
         self.numpro.append(np.sum(pro_density_tot))
         self.numelecs_tot.append(np.sum(np.sum(ew.getw())))
+        l_main_z = 354e-3
+        z_mp = ew.getz()
+        flag_in_body = np.logical_and(z_mp <= l_main_z/2, z_mp >- l_main_z/2)
+        self.numelecs_body_cav.append(np.sum(np.sum(ew.getw()[flag_in_body])))
         self.N_mp.append(ew.getn())
         self.tt.append(picmi.warp.top.time)
+
+        (ex, ey, ez, bx, by, bz) = picmi.warp.getappliedfieldsongrid(
+                                            nx=10, ny=10, nz=10,
+                                            xmin=chamber.xmin, xmax=chamber.xmax,
+                                            ymin=chamber.ymin, ymax=chamber.ymax,
+                                            zmin=chamber.zmin, zmax=chamber.zmax)
+
+        self.ex_applied.append(ex[5, 5, 5])
+
 
     def dump_outputs(self, xmin, xmax, elecbw, b_pass):
         dict_out = {}
         dict_out['numelecs'] = self.numelecs
         dict_out['numpro'] = self.numpro
         dict_out['numelecs_tot'] = self.numelecs_tot
+        dict_out['numelecs_body_cav'] = self.numelecs_body_cav
         dict_out['N_mp'] = self.N_mp
         # Compute the x-position histogram
         if self.n_bunches is not None:
@@ -133,6 +150,7 @@ class Saver:
         dict_out['xhist'] = self.xhist
         dict_out['tt'] = self.tt
         #dict_out['costhav'] = self.sec.costhav
+        dict_out['ex_applied'] = self.ex_applied
         if self.flag_save_ek_impacts:
             dict_out['ek0av'] = self.sec.ek0av
             dict_out['power_diff'] = self.sec.power_diff
