@@ -78,9 +78,9 @@ def plot_fields(self, l_force = 0):
     j_mid_waveguide = int((chamber.ycen6 - chamber.ymin)/em.dy)
     if pw.top.it%self.stride_imgs==0 or l_force:
         #fig = plt.figure( figsize=(7,7))
-        Ex = sim.ES_solver.solver.getex()
-        Ey = sim.ES_solver.solver.getey()
-        Ez = sim.ES_solver.solver.getez()
+        Ex = sim.es_solver.solver.getex()
+        Ey = sim.es_solver.solver.getey()
+        Ez = sim.es_solver.solver.getez()
         elecs = self.ecloud.wspecies.get_density()
         if picmi.warp.me>0:
             mpisend(Ex, tag=8)

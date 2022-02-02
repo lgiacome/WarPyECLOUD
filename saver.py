@@ -5,12 +5,13 @@ from warp import AppendableArray
 from warp import picmi
 from time import sleep
 
+
 class Saver:
 
     def __init__(self, flag_output, flag_checkpointing,
-                 nbins, solver, sec, output_filename= None,
-                 temps_filename = None, probe_filename = 'probe.h5',
-                 tot_nsteps = 1, n_bunches = 1, flag_save_ek_impacts = False):
+                 nbins, solver, sec, output_filename=None,
+                 temps_filename=None, probe_filename='probe.h5',
+                 tot_nsteps=1, n_bunches=1, flag_save_ek_impacts=False):
 
         self.flag_checkpointing = flag_checkpointing
         self.flag_output = flag_output
@@ -21,13 +22,12 @@ class Saver:
         self.output_filename = output_filename
         self.solver = solver
         self.sec = sec
-        self.flag_save_ek_impacts = flag_save_ek_impacts       
+        self.flag_save_ek_impacts = flag_save_ek_impacts
         self.probe_filename = probe_filename
         if self.flag_output:
             self.init_empty_outputs(tot_nsteps, n_bunches)
             if os.path.exists(self.temps_filename):
                 self.restore_outputs_from_file()
-
 
     @staticmethod
     def save_h5_safe(dict_out, filename, serial=False):
@@ -43,24 +43,23 @@ class Saver:
                     dict_to_h5_serial(dict_out, filename)
                 break
             except:
-                count+=1
-                print('Failed saving ' + filename + ' %d times. Retrying in 5 seconds' %count)
+                count += 1
+                print('Failed saving ' + filename + ' %d times. Retrying in 5 seconds' % count)
                 sleep(5)
                 pass
 
-
-    def init_empty_outputs(self, tot_nsteps = 1, n_bunches = 1):
-        self.numelecs = AppendableArray(initlen = tot_nsteps, typecode='d')
-        self.numelecs_tot = AppendableArray(initlen = tot_nsteps, typecode='d')
-        self.numelecs_body_cav =  AppendableArray(initlen = tot_nsteps, typecode='d')
-        self.numpro = AppendableArray(initlen = tot_nsteps, typecode='d')
-        self.N_mp = AppendableArray(initlen = tot_nsteps, typecode='d')
+    def init_empty_outputs(self, tot_nsteps=1, n_bunches=1):
+        self.numelecs = AppendableArray(initlen=tot_nsteps, typecode='d')
+        self.numelecs_tot = AppendableArray(initlen=tot_nsteps, typecode='d')
+        self.numelecs_body_cav = AppendableArray(initlen=tot_nsteps, typecode='d')
+        self.numpro = AppendableArray(initlen=tot_nsteps, typecode='d')
+        self.N_mp = AppendableArray(initlen=tot_nsteps, typecode='d')
         if self.n_bunches is not None:
-            self.xhist = AppendableArray(initlen = n_bunches, typecode = 'd', unitshape = (1,self.nbins))
+            self.xhist = AppendableArray(initlen=n_bunches, typecode='d', unitshape=(1, self.nbins))
         self.bins = np.zeros(self.nbins)
-        self.tt = AppendableArray(initlen = tot_nsteps, typecode='d')
+        self.tt = AppendableArray(initlen=tot_nsteps, typecode='d')
 
-        self.ex_applied = AppendableArray(initlen = tot_nsteps, typecode='d')
+        self.ex_applied = AppendableArray(initlen=tot_nsteps, typecode='d')
 
     def restore_outputs_from_file(self):
         dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
@@ -72,12 +71,12 @@ class Saver:
             for xhist in dict_init_dist['xhist']:
                 self.xhist.append(xhist)
             self.bins = dict_init_dist['bins']
-            self.tt.append(dict_init_dist['tt']) 
+            self.tt.append(dict_init_dist['tt'])
             if self.flag_save_ek_impacts:
                 self.sec.ek0av.append(dict_init_dist['ek0av'])
                 self.sec.power_diff.append(dict_init_dist['power_diff'])
                 self.sec.htime.append(dict_init_dist['t_imp'])
- 
+
     def save_checkpoint(self, b_pass, elecbw):
         dict_out_temp = {}
         print('Saving a checkpoint!')
@@ -101,55 +100,44 @@ class Saver:
                 dict_out_temp['power_diff'] = self.sec.power_diff
                 dict_out_temp['t_imp'] = self.sec.htime
 
-        dict_out_temp['b_pass'] = b_pass 
+        dict_out_temp['b_pass'] = b_pass
         dict_out_temp['ecloud_density'] = elecbw.get_density()
         if picmi.warp.me == 0:
             self.save_h5_safe(dict_out_temp, self.temps_filename, serial=True)
 
-    def update_outputs(self, ew, bw, nx, ny, nz, n_step, chamber):
-        elecb_w = ew.getw()
-        elecs_density = ew.get_density(l_dividebyvolume=0)[:,:,int(nz/2.)]
-        elecs_density_tot = ew.get_density(l_dividebyvolume=0)[:,:,:]
-        pro_density_tot = bw.get_density(l_dividebyvolume=0)[:,:,:]
+    def update_outputs(self, ew, bw, nz, chamber):
+        elecs_density = ew.get_density(l_dividebyvolume=0)[:, :, int(nz / 2.)]
+        pro_density_tot = bw.get_density(l_dividebyvolume=0)[:, :, :]
         self.numelecs.append(np.sum(elecs_density))
         self.numpro.append(np.sum(pro_density_tot))
         self.numelecs_tot.append(np.sum(np.sum(ew.getw())))
         l_main_z = 354e-3
         z_mp = ew.getz()
-        flag_in_body = np.logical_and(z_mp <= l_main_z/2, z_mp >- l_main_z/2)
+        flag_in_body = np.logical_and(z_mp <= l_main_z / 2, z_mp > - l_main_z / 2)
         self.numelecs_body_cav.append(np.sum(np.sum(ew.getw()[flag_in_body])))
         self.N_mp.append(ew.getn())
         self.tt.append(picmi.warp.top.time)
 
         (ex, ey, ez, bx, by, bz) = picmi.warp.getappliedfieldsongrid(
-                                            nx=10, ny=10, nz=10,
-                                            xmin=chamber.xmin, xmax=chamber.xmax,
-                                            ymin=chamber.ymin, ymax=chamber.ymax,
-                                            zmin=chamber.zmin, zmax=chamber.zmax)
+            nx=10, ny=10, nz=10,
+            xmin=chamber.xmin, xmax=chamber.xmax,
+            ymin=chamber.ymin, ymax=chamber.ymax,
+            zmin=chamber.zmin, zmax=chamber.zmax)
 
         self.ex_applied.append(ex[5, 5, 5])
 
-
-    def dump_outputs(self, xmin, xmax, elecbw, b_pass):
-        dict_out = {}
-        dict_out['numelecs'] = self.numelecs
-        dict_out['numpro'] = self.numpro
-        dict_out['numelecs_tot'] = self.numelecs_tot
-        dict_out['numelecs_body_cav'] = self.numelecs_body_cav
-        dict_out['N_mp'] = self.N_mp
+    def dump_outputs(self, xmin, xmax, elecbw):
+        dict_out = {'numelecs': self.numelecs, 'numpro': self.numpro, 'numelecs_tot': self.numelecs_tot,
+                    'numelecs_body_cav': self.numelecs_body_cav, 'N_mp': self.N_mp}
         # Compute the x-position histogram
         if self.n_bunches is not None:
-            (xhist, self.bins) = np.histogram(elecbw.getx(), 
-                                                     range = (xmin,xmax), 
-                                                     bins = self.nbins, 
-                                                     weights = elecbw.getw(), 
-                                                     density = False)
-        self.xhist.append(xhist)
-        
+            (xhist, self.bins) = np.histogram(elecbw.getx(), range=(xmin, xmax), bins=self.nbins, weights=elecbw.getw(),
+                                              density=False)
+            self.xhist.append(xhist)
+
         dict_out['bins'] = self.bins
         dict_out['xhist'] = self.xhist
         dict_out['tt'] = self.tt
-        #dict_out['costhav'] = self.sec.costhav
         dict_out['ex_applied'] = self.ex_applied
         if self.flag_save_ek_impacts:
             dict_out['ek0av'] = self.sec.ek0av
@@ -157,31 +145,24 @@ class Saver:
             dict_out['t_imp'] = self.sec.htime
         if picmi.warp.me == 0:
             self.save_h5_safe(dict_out, self.output_filename, serial=True)
-        #dict_to_h5(dict_out, self.output_filename)
 
-        
-    def dump_em_fields(em, folder, filename):
-        if not os.path.exists(folder+'/'+str(picmi.warp.me)):
-            os.makedirs(folder+'/'+str(picmi.warp.me))
-        dict_out = {}
-        dict_out['ex'] = em.getexg(guards=1)
-        dict_out['ey'] = em.geteyg(guards=1)
-        dict_out['ez'] = em.getezg(guards=1)
-        dict_out['bx'] = em.getbxg(guards=1)
-        dict_out['by'] = em.getbyg(guards=1)
-        dict_out['bz'] = em.getbzg(guards=1)
-        filename_tot = folder+'/'+str(picmi.warp.me)+'/'+filename
+    def dump_em_fields(self, em, folder, filename):
+        if not os.path.exists(folder + '/' + str(picmi.warp.me)):
+            os.makedirs(folder + '/' + str(picmi.warp.me))
+        dict_out = {'ex': em.getexg(guards=1), 'ey': em.geteyg(guards=1), 'ez': em.getezg(guards=1),
+                    'bx': em.getbxg(guards=1), 'by': em.getbyg(guards=1), 'bz': em.getbzg(guards=1)}
+        filename_tot = folder + '/' + str(picmi.warp.me) + '/' + filename
         self.save_h5_safe(dict_out, filename_tot)
 
-    def init_field_probes(self, Nprobes, tot_nsteps, field_probes_dump_stride):
-        self.Nprobes = Nprobes
-        self.e_x_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
-        self.e_y_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
-        self.e_z_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
-        self.b_x_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
-        self.b_y_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
-        self.b_z_vec = AppendableArray(typecode = 'd', unitshape = (Nprobes, 1))
-        self.t_probes = AppendableArray(typecode = 'd')
+    def init_field_probes(self, n_probes, field_probes_dump_stride):
+        self.n_probes = n_probes
+        self.e_x_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
+        self.e_y_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
+        self.e_z_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
+        self.b_x_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
+        self.b_y_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
+        self.b_z_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
+        self.t_probes = AppendableArray(typecode='d')
         self.field_probes_dump_stride = field_probes_dump_stride
 
     def update_field_probes(self, pp):
@@ -194,29 +175,22 @@ class Saver:
         by = em.gatherby()
         bz = em.gatherbz()
 
-        if picmi.warp.me == 0: 
-            self.e_x_vec.append(ex[pp[...,0],pp[...,1],pp[...,2]])
-            self.e_y_vec.append(ey[pp[...,0],pp[...,1],pp[...,2]])
-            self.e_z_vec.append(ez[pp[...,0],pp[...,1],pp[...,2]])
-            self.b_x_vec.append(bx[pp[...,0],pp[...,1],pp[...,2]])
-            self.b_y_vec.append(by[pp[...,0],pp[...,1],pp[...,2]])
-            self.b_z_vec.append(bz[pp[...,0],pp[...,1],pp[...,2]])
-           
+        if picmi.warp.me == 0:
+            self.e_x_vec.append(ex[pp[..., 0], pp[..., 1], pp[..., 2]])
+            self.e_y_vec.append(ey[pp[..., 0], pp[..., 1], pp[..., 2]])
+            self.e_z_vec.append(ez[pp[..., 0], pp[..., 1], pp[..., 2]])
+            self.b_x_vec.append(bx[pp[..., 0], pp[..., 1], pp[..., 2]])
+            self.b_y_vec.append(by[pp[..., 0], pp[..., 1], pp[..., 2]])
+            self.b_z_vec.append(bz[pp[..., 0], pp[..., 1], pp[..., 2]])
+
             self.t_probes.append(pw.top.time)
 
-            #Save if specified by the user and if all the probes have been processed
-            stride = self.field_probes_dump_stride 
-            if pw.top.it%stride == 0:
+            # Save if specified by the user and if all the probes have been processed
+            stride = self.field_probes_dump_stride
+            if pw.top.it % stride == 0:
                 self.dump_probes()
 
     def dump_probes(self):
-        pw = picmi.warp
-        dict_out = {}
-        dict_out['ex'] = self.e_x_vec
-        dict_out['ey'] = self.e_y_vec
-        dict_out['ez'] = self.e_z_vec
-        dict_out['bx'] = self.b_x_vec
-        dict_out['by'] = self.b_y_vec
-        dict_out['bz'] = self.b_z_vec
-        dict_out['t_probes'] = self.t_probes
+        dict_out = {'ex': self.e_x_vec, 'ey': self.e_y_vec, 'ez': self.e_z_vec, 'bx': self.b_x_vec, 'by': self.b_y_vec,
+                    'bz': self.b_z_vec, 't_probes': self.t_probes}
         self.save_h5_safe(dict_out, self.probe_filename, serial=True)

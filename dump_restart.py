@@ -1,18 +1,17 @@
 from warp import dump as warpdump
 from io import StringIO
 import sys
-from warp_pyecloud_sim import warp_pyecloud_sim
+
 
 def dump(sim, filename):
     sim.solver.solver.laser_func = None
     del sim.solver.em3dfft_args['laser_func']
     sim.laser_func = None
     sim.text_trap = None
-    sim.original = None        
-#    sim.custom_plot = None
-#    sim.custom_time_prof = None
+    sim.original = None
     sim.chamber = None
     warpdump(filename)
+
 
 def reinit(sim, laser_func = None, custom_plot = None, custom_time_prof = None):
     if laser_func is not None:

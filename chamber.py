@@ -3,6 +3,17 @@ import numpy as np
 
 
 class RectChamber:
+    """
+    Rectangular chamber.
+    - width: width of the chamber (along x)
+    - height: height of the chamber (along y)
+    - z_start: z-coordinate of the left bound of the chamber
+    - z_end: z-coordinate of the right bound of the chamber
+    - ghost_x: additional length of the domain in x-direction 
+    - ghost_y: additional length of the domain in y-direction
+    - ghost_z: additional length of the domain in z-direction
+    - condid: conductor id (used inside warp for diagnostics)
+    """
 
     def __init__(self, width, height, z_start, z_end, ghost_x=1e-3,
                  ghost_y=1e-3, ghost_z=1e-3, condid=1):
@@ -33,10 +44,11 @@ class RectChamber:
                                       condid=condid)
         lower_box = picmi.warp.YPlane(y0=-height / 2 + 1.e-10, ysign=-1,
                                       condid=condid)
-        left_box = picmi.warp.XPlane(x0=width / 2 - 1.e-10, xsign=1, condid=condid)
+        left_box = picmi.warp.XPlane(x0=width / 2 - 1.e-10, xsign=1,
+                                     condid=condid)
         right_box = picmi.warp.XPlane(x0=-width / 2 + 1.e-10, xsign=-1,
                                       condid=condid)
-        self.z_inj_beam = (0.2*self.z_start+0.8*self.zmin)
+        self.z_inj_beam = (0.2 * self.z_start + 0.8 * self.zmin)
         self.conductors = upper_box + lower_box + left_box + right_box
 
     def is_outside(self, xx, yy, zz):
@@ -50,7 +62,7 @@ class RectChamber:
 
 class LHCChamber:
 
-    def __init__(self, length, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3,
+    def __init__(self, z_start, z_end, ghost_x=1e-3, ghost_y=1e-3,
                  ghost_z=1e-3, condid=1):
         print('Using the LHC chamber')
 
@@ -64,30 +76,30 @@ class LHCChamber:
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
 
-        self.xmin = -width / 2. - ghost_x
+        self.xmin = -self.width / 2. - ghost_x
         self.xmax = -self.xmin
-        self.ymin = -height / 2 - ghost_y
+        self.ymin = -self.height / 2 - ghost_y
         self.ymax = -self.ymin
-        self.zmin = zs_dipo - ghost_z
-        self.zmax = ze_dipo + ghost_z
+        self.zmin = self.z_start - ghost_z
+        self.zmax = self.z_end + ghost_z
 
-        self.lower_bound = [-radius, -radius, z_start]
-        self.upper_bound = [radius, radius, z_end]
+        self.lower_bound = [-self.radius, -self.radius, self.z_start]
+        self.upper_bound = [self.radius, self.radius, self.z_end]
 
-        upper_box = picmi.warp.YPlane(y0=height / 2, ysign=1,
+        upper_box = picmi.warp.YPlane(y0=self.height / 2, ysign=1,
                                       condid=condid)
-        lower_box = picmi.warp.YPlane(y0=-height / 2, ysign=-1,
+        lower_box = picmi.warp.YPlane(y0=-self.height / 2, ysign=-1,
                                       condid=condid)
-        pipe = picmi.warp.ZCylinderOut(radius=radius, length=self.length,
+        pipe = picmi.warp.ZCylinderOut(radius=self.radius, length=self.length,
                                        condid=condid)
 
         self.conductors = pipe + upper_box + lower_box
 
     def is_outside(self, xx, yy, zz):
-        r0_sq = np.square(x0) + np.square(y0)
-        return np.logical_or.reduce([r0sq > self.radius ** 2,
+        r_sq = np.square(xx) + np.square(yy)
+        return np.logical_or.reduce([r_sq > self.radius ** 2,
                                      abs(yy) > self.height,
-                                     zz < z_start, zz > z_end])
+                                     zz < self.z_start, zz > self.z_end])
 
 
 class CircChamber:
@@ -120,9 +132,9 @@ class CircChamber:
         self.conductors = pipe
 
     def is_outside(self, xx, yy, zz):
-        r0_sq = np.square(xx) + np.square(yy)
-        return np.logical_or.reduce([r0sq > self.radius ** 2,
-                                     zz < z_start, zz > z_end])
+        r_sq = np.square(xx) + np.square(yy)
+        return np.logical_or.reduce([r_sq > self.radius ** 2,
+                                     zz < self.z_start, zz > self.z_end])
 
 
 class EllipChamber:
@@ -160,9 +172,9 @@ class EllipChamber:
         self.conductors = pipe
 
     def is_outside(self, xx, yy, zz):
-        r0_sq = np.square(xx / self.r_x) + np.square(yy / self.r_y)
-        return np.logical_or.reduce([r0sq > 1,
-                                     zz < z_start, zz > z_end])
+        r_sq = np.square(xx / self.r_x) + np.square(yy / self.r_y)
+        return np.logical_or.reduce([r_sq > 1,
+                                     zz < self.z_start, zz > self.z_end])
 
 
 class CrabCavitySquared:
@@ -177,21 +189,21 @@ class CrabCavitySquared:
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
         self.z_inj_beam = self.z_start
-        
-        self.l_main_y = 240e-3 #242e-3
+
+        self.l_main_y = 240e-3
         self.l_main_x = 300e-3
-        self.l_main_z = 354e-3 #350e-3
-        self.l_beam_pipe = 84e-3 #for y
+        self.l_main_z = 354e-3
+        self.l_beam_pipe_y = 84e-3
         self.l_beam_pipe_x = 84e-3
-        self.l_int = 60e-3  #62e-3
-        self.l_main_int_y = self.l_main_y - self.l_beam_pipe / 2
+        self.l_int = 60e-3
+        self.l_main_int_y = self.l_main_y - self.l_beam_pipe_y / 2
         self.l_main_int_z = self.l_main_z / 2 - self.l_int
         self.l_main_int_x = self.l_main_x / 2 - self.l_int
         self.disp = disp
         assert z_start < - self.l_main_z / 2, 'z_start must be lower than -175mm'
         assert z_end > self.l_main_z / 2, 'z_end must be higher than 175mm'
 
-        self.xmin = -self.l_main_x/2 - ghost_x
+        self.xmin = -self.l_main_x / 2 - ghost_x
         self.xmax = -self.xmin
         self.ymin = -self.l_main_y / 2 - ghost_y
         self.ymax = -self.ymin
@@ -204,13 +216,13 @@ class CrabCavitySquared:
                               zcent=0.5 * (self.zmax + self.zmin))
         box2 = picmi.warp.Box(zsize=self.zmax - self.zmin,
                               xsize=self.l_beam_pipe_x - 2.e-10,
-                              ysize=self.l_beam_pipe - 2.e-10, condid=condid,
+                              ysize=self.l_beam_pipe_y - 2.e-10, condid=condid,
                               zcent=0.5 * (self.zmax + self.zmin))
         box3 = picmi.warp.Box(zsize=self.l_main_z - 2.e-10,
                               xsize=self.l_main_x - 2.e-10,
                               ysize=self.l_main_y - 2.e-10, condid=condid)
 
-        self.ycen_up = self.l_beam_pipe / 2 + self.l_main_int_y
+        self.ycen_up = self.l_beam_pipe_y / 2 + self.l_main_int_y
         self.ycen_down = - self.ycen_up
         box4 = picmi.warp.Box(zsize=2 * self.l_main_int_z + 2.e-10,
                               xsize=2 * self.l_main_int_x + 2.e-10,
@@ -225,8 +237,6 @@ class CrabCavitySquared:
 
         self.upper_bound = [self.l_main_x / 2, self.l_main_y / 2, self.z_end]
         self.lower_bound = [-self.l_main_x / 2, -self.l_main_y / 2, self.z_start]
-        # self.upper_bound = [self.l_main_int_x, self.l_main_int_y, self.l_main_int_z]
-        # self.lower_bound = [-self.l_main_int_x, -self.l_main_int_y, -self.l_main_int_z]
 
     def is_outside(self, xx, yy, zz):
         flag_in_box = np.logical_and.reduce([abs(xx) < self.l_main_x / 2,
@@ -235,17 +245,17 @@ class CrabCavitySquared:
 
         flag_out_poles = np.logical_and.reduce([abs(xx) < self.l_main_int_x,
                                                 abs(zz) < self.l_main_int_z,
-                                                abs(yy) > self.l_beam_pipe / 2])
+                                                abs(yy) > self.l_beam_pipe_y / 2])
         zs_pipe_left = self.z_start
         ze_pipe_left = -self.l_main_z / 2
         zs_pipe_right = self.l_main_z / 2
         ze_pipe_right = self.z_end
-        flag_in_pipe_l = np.logical_and.reduce([abs(xx) < self.l_beam_pipe,
-                                                abs(yy) < self.l_beam_pipe,
+        flag_in_pipe_l = np.logical_and.reduce([abs(xx) < self.l_beam_pipe_y,
+                                                abs(yy) < self.l_beam_pipe_y,
                                                 zz > zs_pipe_left,
                                                 zz < ze_pipe_left])
-        flag_in_pipe_r = np.logical_and.reduce([abs(xx) < self.l_beam_pipe,
-                                                abs(yy) < self.l_beam_pipe,
+        flag_in_pipe_r = np.logical_and.reduce([abs(xx) < self.l_beam_pipe_y,
+                                                abs(yy) < self.l_beam_pipe_y,
                                                 zz > zs_pipe_right,
                                                 zz < ze_pipe_right])
 
@@ -267,25 +277,25 @@ class CrabCavityWaveguide:
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
         self.z_inj_beam = self.z_start
-        self.l_main_y = 240e-3 #242e-3
+        self.l_main_y = 240e-3
         self.l_main_x = 300e-3
-        self.l_main_z = 354e-3 #350e-3
-        self.l_beam_pipe = 84e-3 #for y
+        self.l_main_z = 354e-3
+        self.l_beam_pipe_y = 84e-3
         self.l_beam_pipe_x = 80e-3
-        self.l_int = 60e-3  #62e-3
-        self.l_main_int_y = self.l_main_y - self.l_beam_pipe / 2
+        self.l_int = 60e-3
+        self.l_main_int_y = self.l_main_y - self.l_beam_pipe_y / 2
         self.l_main_int_z = self.l_main_z / 2 - self.l_int
         self.l_main_int_x = self.l_main_x / 2 - self.l_int
         self.disp = disp
         assert z_start < - self.l_main_z / 2, 'z_start must be lower than -175mm'
         assert z_end > self.l_main_z / 2, 'z_end must be higher than 175mm'
-        self.y_min_wg = 48e-3 + self.disp    #48.4e-3 + self.disp
-        self.y_max_wg = 96e-3 + self.disp    #96.8e-3 + self.disp
+        self.y_min_wg = 48e-3 + self.disp
+        self.y_max_wg = 96e-3 + self.disp
         self.x_min_wg_rest = -120e-3
         self.x_max_wg_rest = 120e-3
         self.x_min_wg = -200e-3
         self.x_max_wg = 200e-3
-        self.z_rest = -204e-3 #-205e-3
+        self.z_rest = -204e-3
 
         self.xmin = self.x_min_wg - ghost_x
         self.xmax = -self.xmin
@@ -294,8 +304,8 @@ class CrabCavityWaveguide:
         self.zmin = z_start - ghost_z
         self.zmax = z_end + ghost_z
 
-        self.z_max_wg = -0.98*self.l_main_z / 2 
-        self.z_min_wg = self.zmin*1.2
+        self.z_max_wg = -0.98 * self.l_main_z / 2
+        self.z_min_wg = self.zmin * 1.2
 
         box1 = picmi.warp.Box(zsize=self.zmax - self.zmin,
                               xsize=self.xmax - self.xmin,
@@ -303,13 +313,13 @@ class CrabCavityWaveguide:
                               zcent=0.5 * (self.zmax + self.zmin))
         box2 = picmi.warp.Box(zsize=self.zmax - self.zmin,
                               xsize=self.l_beam_pipe_x - 2.e-10,
-                              ysize=self.l_beam_pipe - 2.e-10, condid=condid,
+                              ysize=self.l_beam_pipe_y - 2.e-10, condid=condid,
                               zcent=0.5 * (self.zmax + self.zmin))
         box3 = picmi.warp.Box(zsize=self.l_main_z - 2.e-10,
                               xsize=self.l_main_x - 2.e-10,
                               ysize=self.l_main_y - 2.e-10, condid=condid)
 
-        self.ycen_up = self.l_beam_pipe / 2 + self.l_main_int_y
+        self.ycen_up = self.l_beam_pipe_y / 2 + self.l_main_int_y
         self.ycen_down = - self.ycen_up
         box4 = picmi.warp.Box(zsize=2 * self.l_main_int_z + 2.e-10,
                               xsize=2 * self.l_main_int_x + 2.e-10,
@@ -337,8 +347,6 @@ class CrabCavityWaveguide:
 
         self.upper_bound = [self.l_main_x / 2, self.l_main_y / 2, self.l_main_z / 2]
         self.lower_bound = [-self.l_main_x / 2, -self.l_main_y / 2, -self.l_main_z / 2]
-        # self.upper_bound = [self.l_main_int_x, self.l_main_int_y, self.l_main_int_z]
-        # self.lower_bound = [-self.l_main_int_x, -self.l_main_int_y, -self.l_main_int_z]
 
     def is_outside(self, xx, yy, zz):
         flag_in_box = np.logical_and.reduce([abs(xx) < self.l_main_x / 2,
@@ -347,17 +355,17 @@ class CrabCavityWaveguide:
 
         flag_out_poles = np.logical_and.reduce([abs(xx) < self.l_main_int_x,
                                                 abs(zz) < self.l_main_int_z,
-                                                abs(yy) > self.l_beam_pipe / 2])
+                                                abs(yy) > self.l_beam_pipe_y / 2])
         zs_pipe_left = self.z_start
         ze_pipe_left = -self.l_main_z / 2
         zs_pipe_right = self.l_main_z / 2
         ze_pipe_right = self.z_end
-        flag_in_pipe_l = np.logical_and.reduce([abs(xx) < self.l_beam_pipe,
-                                                abs(yy) < self.l_beam_pipe,
+        flag_in_pipe_l = np.logical_and.reduce([abs(xx) < self.l_beam_pipe_y,
+                                                abs(yy) < self.l_beam_pipe_y,
                                                 zz > zs_pipe_left,
                                                 zz < ze_pipe_left])
-        flag_in_pipe_r = np.logical_and.reduce([abs(xx) < self.l_beam_pipe,
-                                                abs(yy) < self.l_beam_pipe,
+        flag_in_pipe_r = np.logical_and.reduce([abs(xx) < self.l_beam_pipe_y,
+                                                abs(yy) < self.l_beam_pipe_y,
                                                 zz > zs_pipe_right,
                                                 zz < ze_pipe_right])
 
@@ -366,52 +374,49 @@ class CrabCavityWaveguide:
         return np.logical_not(np.logical_or.reduce([flag_in_core, flag_in_pipe_r,
                                                     flag_in_pipe_l]))
 
+
 class CrabCavityRoundCyl:
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0):
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
 
-        self.xmin =  -0.2 - ghost_x
+        self.xmin = -0.2 - ghost_x
         self.xmax = 0.2 + ghost_x
         self.ymin = -0.2 - ghost_y
         self.ymax = 0.2 + ghost_y
         self.zmin = -0.3 - ghost_z
         self.zmax = 0.3 + ghost_z
 
-        L_int_x = 0.07
-        L_int_y = 0.104
-        ell = L_int_x/L_int_y
-#ell = 1/ell
+        l_int_x = 0.07
+        l_int_y = 0.104
+        ell = l_int_x / l_int_y
+
         h_up = h_down = 0.1
 
-        L_out_z = 0.141/ell
-        L_slope_out = 0.02/ell
-        L_int_z = 0.07/ell
-        L_slope_int = 0.0267/ell
-        cylbody = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_out_z,
-                                              length=0.284/2, ycent = 0.284/4)
+        l_out_z = 0.141 / ell
+        l_int_z = 0.07 / ell
 
-        cylup = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_int_z,
-                                         length=h_up, ycent = 0.5*(0.042 + 0.142))
-        cyldown = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_int_z,
-                                           length=h_down,
-                                           ycent = -0.5*(0.042 + 0.142))
+        cylup = picmi.warp.YCylinderElliptic(ellipticity=ell, radius=l_int_z, length=h_up, ycent=0.5 * (0.042 + 0.142),
+                                             condid=condid)
+        cyldown = picmi.warp.YCylinderElliptic(ellipticity=ell, radius=l_int_z, length=h_down,
+                                               ycent=-0.5 * (0.042 + 0.142), condid=condid)
 
-        cylbody = picmi.warp.YCylinderElliptic(ellipticity = ell, radius = L_out_z,
-                                                length=0.284)
+        cylbody = picmi.warp.YCylinderElliptic(ellipticity=ell, radius=l_out_z, length=0.284, condid=condid)
 
-        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower = 1.05*self.zmin, zupper = -0.18)
-        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper = 1.05*self.zmax, zlower = 0.18)
-        box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
-        self.conductors = box - cylbody  + cylup + cyldown - cyl_l - cyl_r
-#cone = picmi.warp.XConeElliptic(ellipticity=ell, r_xmin=L_int_x, r_xmax=L_int_x, length=h_up)
+        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower=1.05 * self.zmin, zupper=-0.18, condid=condid)
+        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper=1.05 * self.zmax, zlower=0.18, condid=condid)
+
+        box = picmi.warp.Box(xsize=(self.xmax - self.xmin), ysize=(self.ymax - self.ymin),
+                             zsize=(self.zmax - self.zmin),
+                             condid=condid)
+        self.conductors = box - cylbody + cylup + cyldown - cyl_l - cyl_r
 
         self.lower_bound = [-0.16, -0.15, -0.25]
         self.upper_bound = [0.16, 0.15, 0.25]
 
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
         self.z_inj_beam = self.zmin + dz
@@ -421,53 +426,54 @@ class CrabCavityRoundCyl:
 
 
 class CrabCavityRoundCone:
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0):
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
 
-        self.xmin =  -0.2 - ghost_x
+        self.xmin = -0.2 - ghost_x
         self.xmax = 0.2 + ghost_x
         self.ymin = -0.2 - ghost_y
         self.ymax = 0.2 + ghost_y
         self.zmin = -0.3 - ghost_z
         self.zmax = 0.3 + ghost_z
 
-        L_int_x = 0.07
-        L_int_y = 0.104
-        ell = L_int_x/L_int_y
-#ell = 1/ell
+        l_int_x = 0.07
+        l_int_y = 0.104
+        ell = l_int_x / l_int_y
         h_up = h_down = 0.1
 
-        L_out_z = 0.141/ell
-        L_slope_out = 0.02/ell
-        L_int_z = 0.07/ell
-        L_slope_int = 0.0267/ell
-        conebody_up = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_out_z,
-                                              r_ymax = L_out_z + L_slope_out,
-                                              length=0.284/2, ycent = 0.284/4)
-        conebody_down = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_out_z,
-                                                r_ymin = L_out_z + L_slope_out,
-                                                length=0.284/2, ycent = -0.284/4)
+        l_out_z = 0.141 / ell
+        l_slope_out = 0.02 / ell
+        l_int_z = 0.07 / ell
+        l_slope_int = 0.0267 / ell
+        conebody_up = picmi.warp.YConeElliptic(ellipticity=ell, r_ymin=l_out_z,
+                                               r_ymax=l_out_z + l_slope_out,
+                                               length=0.284 / 2, ycent=0.284 / 4, condid=condid)
+        conebody_down = picmi.warp.YConeElliptic(ellipticity=ell, r_ymax=l_out_z,
+                                                 r_ymin=l_out_z + l_slope_out,
+                                                 length=0.284 / 2, ycent=-0.284 / 4, condid=condid)
 
-        coneup = picmi.warp.YConeElliptic(ellipticity = ell, r_ymin = L_int_z,
-                                         r_ymax = L_int_z + L_slope_int,
-                                         length=h_up, ycent = 0.5*(0.042 + 0.142))
-        conedown = picmi.warp.YConeElliptic(ellipticity = ell, r_ymax = L_int_z,
-                                           r_ymin = L_int_z + L_slope_int, length=h_down,
-                                           ycent = -0.5*(0.042 + 0.142))
+        coneup = picmi.warp.YConeElliptic(ellipticity=ell, r_ymin=l_int_z,
+                                          r_ymax=l_int_z + l_slope_int,
+                                          length=h_up, ycent=0.5 * (0.042 + 0.142), condid=condid)
+        conedown = picmi.warp.YConeElliptic(ellipticity=ell, r_ymax=l_int_z,
+                                            r_ymin=l_int_z + l_slope_int, length=h_down,
+                                            ycent=-0.5 * (0.042 + 0.142), condid=condid)
 
+        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower=1.05 * self.zmin, zupper=-0.18, condid=condid)
+        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper=1.05 * self.zmax, zlower=0.18, condid=condid)
 
+        box = picmi.warp.Box(xsize=(self.xmax - self.xmin), ysize=(self.ymax - self.ymin),
+                             zsize=(self.zmax - self.zmin), condid=condid)
 
-        box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
-
-        self.conductors = box - conebody_up - conebody_down  + coneup + conedown - cyl_l - cyl_r
+        self.conductors = box - conebody_up - conebody_down + coneup + conedown - cyl_l - cyl_r
 
         self.lower_bound = [-0.16, -0.15, -0.25]
         self.upper_bound = [0.16, 0.15, 0.25]
 
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
         self.z_inj_beam = self.zmin + dz
@@ -475,13 +481,14 @@ class CrabCavityRoundCone:
     def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
 
+
 class CrabCavityRound:
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0, meas_kick=False):
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
 
-        self.xmin =  -0.165 - ghost_x
+        self.xmin = -0.165 - ghost_x
         self.xmax = 0.165 + ghost_x
         self.ymin = -0.150 - ghost_y
         self.ymax = 0.150 + ghost_y
@@ -495,43 +502,41 @@ class CrabCavityRound:
         self.L_int_x = 0.071
         self.L_slope_ext_x = 0.02
         self.L_slope_int_x = 0.0267
-        #self.L_int_z = 0.104
         self.L_out_x = 0.0643
-        self.L_out_tot_x = self.L_int_x+self.L_slope_int_x+self.L_out_x-self.L_slope_ext_x
+        self.L_out_tot_x = self.L_int_x + self.L_slope_int_x + self.L_out_x - self.L_slope_ext_x
 
-        self.ell = 1/1.2 
-        #self.ell = self.L_int_x/self.L_int_z
-        self.L_int_z = self.L_int_x/self.ell
-#ell = 1/ell
-        #h_up = h_down = 0.1
+        self.ell = 1 / 1.2
+        self.L_int_z = self.L_int_x / self.ell
 
-        self.L_out_z = self.L_out_tot_x/self.ell
-        self.L_slope_ext_z = self.L_slope_ext_x/self.ell
-        self.L_slope_int_z = self.L_slope_int_x/self.ell
+        self.L_out_z = self.L_out_tot_x / self.ell
+        self.L_slope_ext_z = self.L_slope_ext_x / self.ell
+        self.L_slope_int_z = self.L_slope_int_x / self.ell
 
         self.r_beam_pipe = 0.042
         self.H_out = 0.285
 
-        cyl_l = picmi.warp.ZCylinder(radius=self.r_beam_pipe, zlower = 1.05*self.zmin, zupper = 1.05*self.zmax)
-#        cyl_r = picmi.warp.ZCylinder(radius=self.r_beam_pipe, zupper = 1.05*self.zmax, zlower = 0.18)
+        cyl_pipe = picmi.warp.ZCylinder(radius=self.r_beam_pipe, zlower=1.05 * self.zmin, zupper=1.05 * self.zmax,
+                                        condid=condid)
 
-        rminofzdata = [self.L_int_z+self.L_slope_int_z, self.L_int_z, self.L_int_z, self.L_int_z+self.L_slope_int_z]
-        zmindata = [-self.H_out/2, -self.r_beam_pipe, self.r_beam_pipe, self.H_out/2]
-        rmaxofzdata = [self.L_out_z+self.L_slope_ext_z, self.L_out_z, self.L_out_z+self.L_slope_ext_z]
-        zmaxdata = [-self.H_out/2, 0, self.H_out/2]
-        bodyCC_rev = picmi.warp.YSrfrvEllipticInOut(ellipticity=self.ell, rminofydata=rminofzdata, rmaxofydata=rmaxofzdata, ymindata=zmindata, ymaxdata=zmaxdata)
-        bodyCC_cyl = picmi.warp.YCylinderElliptic(ellipticity = self.ell, radius=1.01*self.L_int_z, length = 2*self.r_beam_pipe)
-        bodyCC= bodyCC_rev + bodyCC_cyl
+        rminofzdata = [self.L_int_z + self.L_slope_int_z, self.L_int_z, self.L_int_z, self.L_int_z + self.L_slope_int_z]
+        zmindata = [-self.H_out / 2, -self.r_beam_pipe, self.r_beam_pipe, self.H_out / 2]
+        rmaxofzdata = [self.L_out_z + self.L_slope_ext_z, self.L_out_z, self.L_out_z + self.L_slope_ext_z]
+        zmaxdata = [-self.H_out / 2, 0, self.H_out / 2]
+        body_cc_rev = picmi.warp.YSrfrvEllipticInOut(ellipticity=self.ell, rminofydata=rminofzdata,
+                                                     rmaxofydata=rmaxofzdata, ymindata=zmindata, ymaxdata=zmaxdata,
+                                                     condid=condid)
+        body_cc_cyl = picmi.warp.YCylinderElliptic(ellipticity=self.ell, radius=1.01 * self.L_int_z,
+                                                   length=2 * self.r_beam_pipe, condid=condid)
+        body_cc = body_cc_rev + body_cc_cyl
 
-        box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
-        self.conductors = box - bodyCC - cyl_l #- cyl_r #cylup + cyldown #+ (box - bodyCC)
+        box = picmi.warp.Box(xsize=(self.xmax - self.xmin), ysize=(self.ymax - self.ymin),
+                             zsize=(self.zmax - self.zmin), condid=condid)
+        self.conductors = box - body_cc - cyl_pipe
 
-        #self.lower_bound = [-0.16, -0.15, -0.25]
-        #self.upper_bound = [0.16, 0.15, 0.25]
         self.lower_bound = np.array([self.xmin, self.ymin, self.zmin])
         self.upper_bound = np.array([self.xmax, self.ymax, self.zmax])
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
         self.z_inj_beam = self.zmin + dz
@@ -541,8 +546,8 @@ class CrabCavityRound:
 
 
 class SimpleRFD:
-    
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz = 0, condid=1, meas_kick=False):
+
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz=0, condid=1, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
@@ -555,36 +560,46 @@ class SimpleRFD:
         self.Ly_pole = 0.1438274
         self.h_pole = 0.102
 
-        self.xmin =  -0.285/2 - ghost_x
-        self.xmax = 0.285/2 + ghost_x
-        self.ymin = -0.285/2 - ghost_y
-        self.ymax = 0.285/2 + ghost_y
+        self.xmin = -0.285 / 2 - ghost_x
+        self.xmax = 0.285 / 2 + ghost_x
+        self.ymin = -0.285 / 2 - ghost_y
+        self.ymax = 0.285 / 2 + ghost_y
         if not meas_kick:
-            self.zmin = -0.750/2 - ghost_z
-            self.zmax = 0.750/2 + ghost_z
+            self.zmin = -0.750 / 2 - ghost_z
+            self.zmax = 0.750 / 2 + ghost_z
         else:
-            self.zmin = -0.750/2 - ghost_z
-            self.zmax = 0.750/2 + 1.002 + ghost_z
+            self.zmin = -0.750 / 2 - ghost_z
+            self.zmax = 0.750 / 2 + 1.002 + ghost_z
 
-        self.l_beam_pipe = self.zmax - self.zmin   
+        self.l_beam_pipe = self.zmax - self.zmin
 
-        cyl_body_1 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=self.L_body/2-self.r_body, ycent=self.L_body/2-self.r_body)
-        cyl_body_2 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=-self.L_body/2+self.r_body, ycent=self.L_body/2-self.r_body)
-        cyl_body_3 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=self.L_body/2-self.r_body, ycent=-self.L_body/2+self.r_body)
-        cyl_body_4 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=-self.L_body/2+self.r_body, ycent=-self.L_body/2+self.r_body)
+        cyl_body_1 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=self.L_body / 2 - self.r_body,
+                                          ycent=self.L_body / 2 - self.r_body, condid=condid)
+        cyl_body_2 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=-self.L_body / 2 + self.r_body,
+                                          ycent=self.L_body / 2 - self.r_body, condid=condid)
+        cyl_body_3 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=self.L_body / 2 - self.r_body,
+                                          ycent=-self.L_body / 2 + self.r_body, condid=condid)
+        cyl_body_4 = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, xcent=-self.L_body / 2 + self.r_body,
+                                          ycent=-self.L_body / 2 + self.r_body, condid=condid)
 
-        box_body_h = picmi.warp.Box(xsize=self.L_body, ysize=self.L_body-2*self.r_body, zsize=self.Lz_body)
-        box_body_v = picmi.warp.Box(xsize=self.L_body-2*self.r_body, ysize=self.L_body, zsize=self.Lz_body)
-            
-        box_pole_up = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole, xcent=self.L_body/2-self.h_pole/2)
-        box_pole_down = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole, xcent=-self.L_body/2+self.h_pole/2)
+        box_body_h = picmi.warp.Box(xsize=self.L_body, ysize=self.L_body - 2 * self.r_body, zsize=self.Lz_body,
+                                    condid=condid)
+        box_body_v = picmi.warp.Box(xsize=self.L_body - 2 * self.r_body, ysize=self.L_body, zsize=self.Lz_body,
+                                    condid=condid)
 
-        beam_pipe = picmi.warp.ZCylinder(radius=self.r_beam_pipe, length=self.l_beam_pipe)
+        box_pole_up = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole,
+                                     xcent=self.L_body / 2 - self.h_pole / 2, condid=condid)
+        box_pole_down = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole,
+                                       xcent=-self.L_body / 2 + self.h_pole / 2, condid=condid)
+
+        beam_pipe = picmi.warp.ZCylinder(radius=self.r_beam_pipe, length=self.l_beam_pipe, condid=condid)
 
         body = -cyl_body_1 - cyl_body_2 - cyl_body_3 - cyl_body_4 - box_body_h - box_body_v
 
-        beam_pipe_left = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=-self.Lz_body/2-self.zmin, zcent=0.5*(-self.Lz_body/2+self.zmin))
-        beam_pipe_right = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=self.zmax-self.Lz_body/2, zcent=0.5*(self.Lz_body/2+self.zmax))
+        beam_pipe_left = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=-self.Lz_body / 2 - self.zmin,
+                                                 zcent=0.5 * (-self.Lz_body / 2 + self.zmin), condid=condid)
+        beam_pipe_right = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=self.zmax - self.Lz_body / 2,
+                                                  zcent=0.5 * (self.Lz_body / 2 + self.zmax), condid=condid)
 
         self.conductors = body + box_pole_up + box_pole_down - beam_pipe + beam_pipe_left + beam_pipe_right
 
@@ -592,20 +607,19 @@ class SimpleRFD:
         self.upper_bound = np.array([self.xmax, self.ymax, self.zmax])
 
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
 
         self.z_inj_beam = self.zmin + dz
-    
 
     def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
- 
+
 
 class SimpleRFDCyl:
-    
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz = 0, condid=1, meas_kick=False):
+
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz=0, condid=1, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
@@ -618,33 +632,36 @@ class SimpleRFDCyl:
         self.Ly_pole = 0.1438274
         self.h_pole = 0.102
 
-        self.xmin =  -0.285/2 - ghost_x
-        self.xmax = 0.285/2 + ghost_x
-        self.ymin = -0.285/2 - ghost_y
-        self.ymax = 0.285/2 + ghost_y
+        self.xmin = -0.285 / 2 - ghost_x
+        self.xmax = 0.285 / 2 + ghost_x
+        self.ymin = -0.285 / 2 - ghost_y
+        self.ymax = 0.285 / 2 + ghost_y
         if not meas_kick:
-            self.zmin = -0.750/2 - ghost_z
-            self.zmax = 0.750/2 + ghost_z
+            self.zmin = -0.750 / 2 - ghost_z
+            self.zmax = 0.750 / 2 + ghost_z
         else:
-            self.zmin = -0.750/2 - ghost_z
-            self.zmax = 0.750/2 + 1.002 + ghost_z
+            self.zmin = -0.750 / 2 - ghost_z
+            self.zmax = 0.750 / 2 + 1.002 + ghost_z
 
-        self.l_beam_pipe = self.zmax - self.zmin   
+        self.l_beam_pipe = self.zmax - self.zmin
 
-        cyl_body = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body)
+        cyl_body = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body, condid=condid)
 
-        box_body = picmi.warp.Box(xsize=self.L_body, ysize=self.L_body, zsize=self.Lz_body)
-            
-        box_pole_up = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole, xcent=self.L_body/2-self.h_pole/2)
-        box_pole_down = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole, xcent=-self.L_body/2+self.h_pole/2)
+        box_body = picmi.warp.Box(xsize=self.L_body, ysize=self.L_body, zsize=self.Lz_body, condid=condid)
 
-        beam_pipe = picmi.warp.ZCylinder(radius=self.r_beam_pipe, length=self.l_beam_pipe)
+        box_pole_up = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole,
+                                     xcent=self.L_body / 2 - self.h_pole / 2, condid=condid)
+        box_pole_down = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole,
+                                       xcent=-self.L_body / 2 + self.h_pole / 2, condid=condid)
 
-        
-        body = cyl_body*box_body 
+        beam_pipe = picmi.warp.ZCylinder(radius=self.r_beam_pipe, length=self.l_beam_pipe, condid=condid)
 
-        beam_pipe_left = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=-self.Lz_body/2-self.zmin, zcent=0.5*(-self.Lz_body/2+self.zmin))
-        beam_pipe_right = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=self.zmax-self.Lz_body/2, zcent=0.5*(self.Lz_body/2+self.zmax))
+        body = cyl_body * box_body
+
+        beam_pipe_left = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=-self.Lz_body / 2 - self.zmin,
+                                                 zcent=0.5 * (-self.Lz_body / 2 + self.zmin), condid=condid)
+        beam_pipe_right = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=self.zmax - self.Lz_body / 2,
+                                                  zcent=0.5 * (self.Lz_body / 2 + self.zmax), condid=condid)
 
         self.conductors = -body + box_pole_up + box_pole_down - beam_pipe + beam_pipe_left + beam_pipe_right
 
@@ -652,20 +669,19 @@ class SimpleRFDCyl:
         self.upper_bound = np.array([self.xmax, self.ymax, self.zmax])
 
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
 
         self.z_inj_beam = self.zmin + dz
-    
 
     def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
- 
+
 
 class SimpleRFDRot:
-    
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz = 0, condid=1, meas_kick=False):
+
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, nz=0, condid=1, meas_kick=False):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
@@ -679,39 +695,40 @@ class SimpleRFDRot:
         self.h_pole = 0.101
         self.L1 = 0.03
 
-        self.xmin =  -0.285/2 - ghost_x
-        self.xmax = 0.285/2 + ghost_x
-        self.ymin = -0.285/2 - ghost_y
-        self.ymax = 0.285/2 + ghost_y
+        self.xmin = -0.285 / 2 - ghost_x
+        self.xmax = 0.285 / 2 + ghost_x
+        self.ymin = -0.285 / 2 - ghost_y
+        self.ymax = 0.285 / 2 + ghost_y
         if not meas_kick:
-            self.zmin = -0.750/2 - ghost_z
-            self.zmax = 0.750/2 + ghost_z
+            self.zmin = -0.750 / 2 - ghost_z
+            self.zmax = 0.750 / 2 + ghost_z
         else:
-            self.zmin = -0.750/2 - ghost_z
-            self.zmax = 0.750/2 + 1.002 + ghost_z
+            self.zmin = -0.750 / 2 - ghost_z
+            self.zmax = 0.750 / 2 + 1.002 + ghost_z
 
-        self.l_beam_pipe = self.zmax - self.zmin   
-
-        #cyl_body = picmi.warp.ZCylinder(radius=self.r_body, length=self.Lz_body)
+        self.l_beam_pipe = self.zmax - self.zmin
 
         rsrf = [0, self.r_beam_pipe, self.r_body, self.r_body, self.r_beam_pipe, 0]
-        zsrf = [-self.Lz_body/2, -self.Lz_body/2, -self.Lz_body/2+self.L1, 
-                self.Lz_body/2-self.L1, self.Lz_body/2, self.Lz_body/2]
+        zsrf = [-self.Lz_body / 2, -self.Lz_body / 2, -self.Lz_body / 2 + self.L1,
+                self.Lz_body / 2 - self.L1, self.Lz_body / 2, self.Lz_body / 2]
 
-        rot_body = picmi.warp.ZSrfrv(rsrf=rsrf, zsrf=zsrf)
+        rot_body = picmi.warp.ZSrfrv(rsrf=rsrf, zsrf=zsrf, condid=condid)
 
-        box_body = picmi.warp.Box(xsize=self.L_body, ysize=self.L_body, zsize=self.Lz_body)
-            
-        box_pole_up = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole, xcent=self.L_body/2-self.h_pole/2)
-        box_pole_down = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole, xcent=-self.L_body/2+self.h_pole/2)
+        box_body = picmi.warp.Box(xsize=self.L_body, ysize=self.L_body, zsize=self.Lz_body, condid=condid)
 
-        beam_pipe = picmi.warp.ZCylinder(radius=self.r_beam_pipe, length=self.l_beam_pipe)
+        box_pole_up = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole,
+                                     xcent=self.L_body / 2 - self.h_pole / 2, condid=condid)
+        box_pole_down = picmi.warp.Box(xsize=self.h_pole, ysize=self.Ly_pole, zsize=self.Lz_pole,
+                                       xcent=-self.L_body / 2 + self.h_pole / 2, condid=condid)
 
-        
-        body = rot_body*box_body 
+        beam_pipe = picmi.warp.ZCylinder(radius=self.r_beam_pipe, length=self.l_beam_pipe, condid=condid)
 
-        beam_pipe_left = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=-self.Lz_body/2-self.zmin, zcent=0.5*(-self.Lz_body/2+self.zmin))
-        beam_pipe_right = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=self.zmax-self.Lz_body/2, zcent=0.5*(self.Lz_body/2+self.zmax))
+        body = rot_body * box_body
+
+        beam_pipe_left = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=-self.Lz_body / 2 - self.zmin,
+                                                 zcent=0.5 * (-self.Lz_body / 2 + self.zmin), condid=condid)
+        beam_pipe_right = picmi.warp.ZCylinderOut(radius=self.r_beam_pipe, length=self.zmax - self.Lz_body / 2,
+                                                  zcent=0.5 * (self.Lz_body / 2 + self.zmax), condid=condid)
 
         self.conductors = -body + box_pole_up + box_pole_down - beam_pipe + beam_pipe_left + beam_pipe_right
 
@@ -719,103 +736,96 @@ class SimpleRFDRot:
         self.upper_bound = np.array([self.xmax, self.ymax, self.zmax])
 
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
 
         self.z_inj_beam = self.zmin + dz
-    
 
     def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
-    
+
+
 class Triangulation:
     def __init__(self, filename, ghost_x=20e-3, ghost_y=20e-3, ghost_z=20e-3,
-                 condid=1, nz = 0):
+                 condid=1, nz=0):
         import meshio
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
 
         mesh = meshio.read(filename, file_format="gmsh")
-        self.points = mesh.points/1e3
+        self.points = mesh.points / 1e3
         triangles2points = mesh.cells_dict['triangle']
-        Ntri = np.shape(triangles2points)[0]
         triangles = self.points[triangles2points].transpose(2, 1, 0)
-   
-        self.xmin =  np.min(self.points[:, 0]) - ghost_x
+
+        self.xmin = np.min(self.points[:, 0]) - ghost_x
         self.xmax = np.max(self.points[:, 0]) + ghost_x
         self.ymin = np.min(self.points[:, 1]) - ghost_y
         self.ymax = np.max(self.points[:, 1]) + ghost_y
-        #self.xmin = -200e-3 - ghost_x
-        #self.xmax = -self.xmin
-        #self.ymin = -242e-3 / 2 - ghost_y
-        #self.ymax = -self.ymin
         self.zmin = np.min(self.points[:, 2]) + ghost_z
         self.zmax = np.max(self.points[:, 2]) - ghost_z
 
         self.conductors = picmi.warp.Triangles(triangles, condid=condid)
 
-        self.lower_bound = [0.97*np.min(self.points[:, 0]), 0.97*np.min(self.points[:, 1]), -0.2] #np.min(self.points[:, 2])]
-        self.upper_bound = [0.97*np.max(self.points[:, 0]), 0.97*np.max(self.points[:, 1]), 0.2] #np.max(self.points[:, 2])]
-        #self.lower_bound = [self.xmin, self.ymin, self.zmin]
-        #self.upper_bound = [self.xmax, self.ymax, self.zmax]
-        #self.lower_bound = [-0.05, -0.1, -0.2]
-        #self.upper_bound = -np.array([-0.05, -0.1, -0.2])
+        self.lower_bound = [0.97 * np.min(self.points[:, 0]), 0.97 * np.min(self.points[:, 1]),
+                            -0.2]
+        self.upper_bound = [0.97 * np.max(self.points[:, 0]), 0.97 * np.max(self.points[:, 1]),
+                            0.2]
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
-        
+
         self.z_inj_beam = self.zmin + dz
 
-    def is_outside(self, xx, yy, zz): 
+    def is_outside(self, xx, yy, zz):
         return np.array(self.conductors.isinside(xx, yy, zz).isinside) == 1.
 
 
 class CrabCavityRoundOld:
-    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz = 0):
+    def __init__(self, ghost_x=0, ghost_y=0, ghost_z=0, condid=1, nz=0):
         self.ghost_x = ghost_x
         self.ghost_y = ghost_y
         self.ghost_z = ghost_z
 
-        self.xmin =  -0.2 - ghost_x
+        self.xmin = -0.2 - ghost_x
         self.xmax = 0.2 + ghost_x
         self.ymin = -0.2 - ghost_y
         self.ymax = 0.2 + ghost_y
         self.zmin = -0.3 - ghost_z
         self.zmax = 0.3 + ghost_z
 
-        L_int_x = 0.07
-        L_int_y = 0.104
-        ell = L_int_x/L_int_y
-#ell = 1/ell
-        h_up = h_down = 0.1
+        l_int_x = 0.07
+        l_int_y = 0.104
+        ell = l_int_x / l_int_y
 
-        L_out_z = 0.141/ell
-        L_slope_out = 0.02/ell
-        L_int_z = 0.07/ell
-        L_slope_int = 0.0267/ell
+        l_out_z = 0.141 / ell
+        l_slope_out = 0.02 / ell
+        l_int_z = 0.07 / ell
+        l_slope_int = 0.0267 / ell
 
-        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower = 1.05*self.zmin, zupper = -0.18)
-        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper = 1.05*self.zmax, zlower = 0.18)
+        cyl_l = picmi.warp.ZCylinder(radius=0.042, zlower=1.05 * self.zmin, zupper=-0.18)
+        cyl_r = picmi.warp.ZCylinder(radius=0.042, zupper=1.05 * self.zmax, zlower=0.18)
 
-        rminofzdata = [L_int_z+L_slope_int, L_int_z, L_int_z, L_int_z+L_slope_int]
-        zmindata = [-0.284/2, -0.042,  0.042, 0.284/2]
-        rmaxofzdata = [L_out_z+L_slope_out, L_out_z, L_out_z+L_slope_out]
-        zmaxdata = [-0.284/2, 0, 0.284/2]
-        bodyCC_rev = picmi.warp.YSrfrvEllipticInOut(ellipticity=ell, rminofydata=rminofzdata, rmaxofydata=rmaxofzdata, ymindata=zmindata, ymaxdata=zmaxdata)
+        rminofzdata = [l_int_z + l_slope_int, l_int_z, l_int_z, l_int_z + l_slope_int]
+        zmindata = [-0.284 / 2, -0.042, 0.042, 0.284 / 2]
+        rmaxofzdata = [l_out_z + l_slope_out, l_out_z, l_out_z + l_slope_out]
+        zmaxdata = [-0.284 / 2, 0, 0.284 / 2]
+        body_cc_rev = picmi.warp.YSrfrvEllipticInOut(ellipticity=ell, rminofydata=rminofzdata, rmaxofydata=rmaxofzdata,
+                                                     ymindata=zmindata, ymaxdata=zmaxdata, condid=condid)
 
-        bodyCC_cyl = picmi.warp.YCylinderElliptic(ellipticity = ell, radius=L_int_z, length = 0.084)
-        bodyCC= bodyCC_rev + bodyCC_cyl
+        body_cc_cyl = picmi.warp.YCylinderElliptic(ellipticity=ell, radius=l_int_z, length=0.084, condid=condid)
+        body_cc = body_cc_rev + body_cc_cyl
 
-        box = picmi.warp.Box(xsize=(self.xmax-self.xmin), ysize=(self.ymax-self.ymin), zsize=(self.zmax-self.zmin))
-        self.conductors = box - bodyCC - cyl_l - cyl_r #cylup + cyldown #+ (box - bodyCC)
+        box = picmi.warp.Box(xsize=(self.xmax - self.xmin), ysize=(self.ymax - self.ymin),
+                             zsize=(self.zmax - self.zmin))
+        self.conductors = box - body_cc - cyl_l - cyl_r
 
-        self.lower_bound=np.array([self.xmin,self.ymin,self.zmin])
-        self.upper_bound=-self.lower_bound
+        self.lower_bound = np.array([self.xmin, self.ymin, self.zmin])
+        self.upper_bound = -self.lower_bound
         if nz > 0:
-            dz = (self.zmax-self.zmin)/nz
+            dz = (self.zmax - self.zmin) / nz
         else:
             dz = 0
         self.z_inj_beam = self.zmin + dz
