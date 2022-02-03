@@ -7,6 +7,19 @@ import os
 
 def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber, images_dir='images_cavity', wg=True,
                     lines=True):
+    """
+    Function to plot a field in the squared Crab Cavity with or without the feeding waveguide
+    - ff: field to plot
+    - ffstr: string identifying the name of the field
+    - mine: min of the colorbar scale
+    - maxe: max of the colorbar scale
+    - k_antenna: position of the antenna in z-cells
+    - j_mid_waveguide: position of the centroid of the waveguide in y-cells
+    - chamber: chamber object
+    - images_dir: folder where the images are saved
+    - wg: if True it plots the waveguide as well
+    - lines: if True it plots the profile of the cavity
+    """
     pw = picmi.warp
     fig = plt.figure(figsize=(7, 7))
     xmin = chamber.xmin
@@ -146,6 +159,15 @@ def plot_field_crab(ff, ffstr, mine, maxe, k_antenna, j_mid_waveguide, chamber, 
 
 
 def plot_fields(ff, ffstr, mine, maxe, chamber, images_dir):
+    """
+    Function to plot a field
+    - ff: field to plot
+    - ffstr: string identifying the name of the field
+    - mine: min of the colorbar scale
+    - maxe: max of the colorbar scale
+    - chamber: chamber object
+    - images_dir: folder where the images are saved
+    """
     (Nx, Ny, Nz) = np.shape(ff)
     pw = picmi.warp
     fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
@@ -188,6 +210,15 @@ def ellipse(xx, a, b, xcent=0, ycent=0):
 
 
 def plot_fields_dqw(ff, ffstr, mine, maxe, chamber, images_dir):
+    """
+    Function to plot a field in the DQW Crab Cavity
+    - ff: field to plot
+    - ffstr: string identifying the name of the field
+    - mine: min of the colorbar scale
+    - maxe: max of the colorbar scale
+    - chamber: chamber object
+    - images_dir: folder where the images are saved
+    """
     (Nx, Ny, Nz) = np.shape(ff)
     pw = picmi.warp
     fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
@@ -248,7 +279,6 @@ def plot_fields_dqw(ff, ffstr, mine, maxe, chamber, images_dir):
 
     axs[2].set_xlabel('z [m]')
     axs[2].set_ylabel('x [m]')
-    #    axs[2].set_title(ffstr)
     fig.colorbar(im2, ax=axs[2])
 
     if not os.path.exists(images_dir):
@@ -256,7 +286,6 @@ def plot_fields_dqw(ff, ffstr, mine, maxe, chamber, images_dir):
     if not os.path.exists(images_dir + '/' + ffstr):
         os.mkdir(images_dir + '/' + ffstr)
     figname = images_dir + '/' + ffstr + '/it_' + str(pw.top.it).zfill(5) + '.png'
-    # figname = self.images_dir + '/%d.png' %int(self.n_step)
     fig.suptitle(ffstr + ', t = %1.6e' % pw.top.time)
     if not os.path.exists(images_dir):
         os.mkdir(images_dir)
@@ -267,6 +296,15 @@ def plot_fields_dqw(ff, ffstr, mine, maxe, chamber, images_dir):
 
 
 def plot_fields_rfd(ff, ffstr, mine, maxe, chamber, images_dir):
+    """
+    Function to plot a field in the RFD Crab Cavity
+    - ff: field to plot
+    - ffstr: string identifying the name of the field
+    - mine: min of the colorbar scale
+    - maxe: max of the colorbar scale
+    - chamber: chamber object
+    - images_dir: folder where the images are saved
+    """
     (Nx, Ny, Nz) = np.shape(ff)
     pw = picmi.warp
     fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
@@ -450,6 +488,15 @@ def plot_fields_rfd(ff, ffstr, mine, maxe, chamber, images_dir):
 
 
 def plot_fields_rfd_cyl(ff, ffstr, mine, maxe, chamber, images_dir):
+    """
+    Function to plot a field in the RFD Crab Cavity obtained with cylinders
+    - ff: field to plot
+    - ffstr: string identifying the name of the field
+    - mine: min of the colorbar scale
+    - maxe: max of the colorbar scale
+    - chamber: chamber object
+    - images_dir: folder where the images are saved
+    """
     (Nx, Ny, Nz) = np.shape(ff)
     pw = picmi.warp
     fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
