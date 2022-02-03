@@ -2,11 +2,16 @@ import numpy as np
 from numpy.random import rand
 from warp import echarge as charge
 from warp import emass as mass
-from warp import top
-from warp_parallel import parallelsum
+from warp_parallel import parallelsum, top
 
 
 def perform_regeneration(target_n_mp, wsp, sec):
+    """
+    Perform a resampling of the macroparticles distribution
+    - target_n_mp: target number of macropaticles after the regeneration
+    - wsp: electrons species object
+    - sec: PyECLOUD secondary emission object
+    """
     # Old number of MPs
     n_mp = wsp.getn()
     # Compute old total charge and Ekin
