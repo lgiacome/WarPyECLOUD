@@ -7,13 +7,21 @@ from time import sleep
 
 
 class Saver:
+    """
+    WarPyECLOUD saver class
+    - flag_output: save outputs to file
+    - nbins: number of bins for the histograms
+    - solver: Warp solver object
+    - temps_filename: name of checkpoint file
+    - probe_filename: name of field probe file
+    - tot_nsteps: total number of steps of the simulation
+    - n_nunches: number of the simulated bunches
+    - flag_save_ek_impacts: if True save the kinetic energy deposited on the conductors by the electrons
+    """
 
-    def __init__(self, flag_output, flag_checkpointing,
-                 nbins, solver, sec, output_filename=None,
-                 temps_filename=None, probe_filename='probe.h5',
-                 tot_nsteps=1, n_bunches=1, flag_save_ek_impacts=False):
+    def __init__(self, flag_output, nbins, solver, sec, output_filename=None, temps_filename=None,
+                 probe_filename='probe.h5', tot_nsteps=1, n_bunches=1, flag_save_ek_impacts=False):
 
-        self.flag_checkpointing = flag_checkpointing
         self.flag_output = flag_output
         self.temps_filename = temps_filename
         self.tot_nsteps = tot_nsteps
@@ -31,7 +39,12 @@ class Saver:
 
     @staticmethod
     def save_h5_safe(dict_out, filename, serial=False):
-        saved = False
+        """
+        Save a dictionary into a h5 file in a safe way, which keep retrying to save until it works
+        - dict_save: dictionary to save
+        - filename: name of the h5 file
+        - serial: if True use MPI support
+        """
         count = 0
         if picmi.warp.me == 0 and os.path.exists(filename):
             os.remove(filename)
@@ -49,6 +62,12 @@ class Saver:
                 pass
 
     def init_empty_outputs(self, tot_nsteps=1, n_bunches=1):
+        """
+        Save a dictionary into a h5 file in a safe way, which keep retrying to save until it works
+        - dict_save: dictionary to save
+        - filename: name of the h5 file
+        - serial: if True use MPI support
+        """
         self.numelecs = AppendableArray(initlen=tot_nsteps, typecode='d')
         self.numelecs_tot = AppendableArray(initlen=tot_nsteps, typecode='d')
         self.numelecs_body_cav = AppendableArray(initlen=tot_nsteps, typecode='d')
@@ -62,6 +81,9 @@ class Saver:
         self.ex_applied = AppendableArray(initlen=tot_nsteps, typecode='d')
 
     def restore_outputs_from_file(self):
+        """
+        When restarting from a checkpoint restore the output arrays
+        """
         dict_init_dist = dict_of_arrays_and_scalar_from_h5(self.temps_filename)
         if self.flag_output:
             self.numelecs.append(dict_init_dist['numelecs'])
@@ -78,6 +100,11 @@ class Saver:
                 self.sec.htime.append(dict_init_dist['t_imp'])
 
     def save_checkpoint(self, b_pass, elecbw):
+        """
+        Save a checkpoint
+        - b_pass: bunch passage number
+        - elecbw: electrons species object
+        """
         dict_out_temp = {}
         print('Saving a checkpoint!')
         dict_out_temp['x_mp'] = elecbw.getx()
@@ -106,6 +133,13 @@ class Saver:
             self.save_h5_safe(dict_out_temp, self.temps_filename, serial=True)
 
     def update_outputs(self, ew, bw, nz, chamber):
+        """
+        Update the output arrays
+        - ew: electrons species object
+        - bw: beam species object
+        - nz: number of cells in z-direction
+        - chamber: chamber object
+        """
         elecs_density = ew.get_density(l_dividebyvolume=0)[:, :, int(nz / 2.)]
         pro_density_tot = bw.get_density(l_dividebyvolume=0)[:, :, :]
         self.numelecs.append(np.sum(elecs_density))
@@ -127,6 +161,12 @@ class Saver:
         self.ex_applied.append(ex[5, 5, 5])
 
     def dump_outputs(self, xmin, xmax, elecbw):
+        """
+        Dump the output file
+        - xmin: min of the domain in x
+        - xmax: max of the domain in x
+        - elecbw: electrons species object
+        """
         dict_out = {'numelecs': self.numelecs, 'numpro': self.numpro, 'numelecs_tot': self.numelecs_tot,
                     'numelecs_body_cav': self.numelecs_body_cav, 'N_mp': self.N_mp}
         # Compute the x-position histogram
@@ -147,6 +187,12 @@ class Saver:
             self.save_h5_safe(dict_out, self.output_filename, serial=True)
 
     def dump_em_fields(self, em, folder, filename):
+        """
+        Dump the super-imposed electromagnetic fields to an h5 file
+        - em: electromagnetic solver object
+        - folder: folder where to save the file
+        - filename: name of the file
+        """
         if not os.path.exists(folder + '/' + str(picmi.warp.me)):
             os.makedirs(folder + '/' + str(picmi.warp.me))
         dict_out = {'ex': em.getexg(guards=1), 'ey': em.geteyg(guards=1), 'ez': em.getezg(guards=1),
@@ -155,6 +201,11 @@ class Saver:
         self.save_h5_safe(dict_out, filename_tot)
 
     def init_field_probes(self, n_probes, field_probes_dump_stride):
+        """
+        Initialize the arrays of the field probes
+        - n_probes: number of probes
+        - field_probes_dump_stride: stride between two probe saves
+        """
         self.n_probes = n_probes
         self.e_x_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
         self.e_y_vec = AppendableArray(typecode='d', unitshape=(n_probes, 1))
@@ -166,6 +217,10 @@ class Saver:
         self.field_probes_dump_stride = field_probes_dump_stride
 
     def update_field_probes(self, pp):
+        """
+        Update the arrays of the field probes
+        - pp: probes locations
+        """
         pw = picmi.warp
         em = self.solver.solver
         ex = em.gatherex()
@@ -191,6 +246,9 @@ class Saver:
                 self.dump_probes()
 
     def dump_probes(self):
+        """
+        Dump the probe files
+        """
         dict_out = {'ex': self.e_x_vec, 'ey': self.e_y_vec, 'ez': self.e_z_vec, 'bx': self.b_x_vec, 'by': self.b_y_vec,
                     'bz': self.b_z_vec, 't_probes': self.t_probes}
         self.save_h5_safe(dict_out, self.probe_filename, serial=True)
