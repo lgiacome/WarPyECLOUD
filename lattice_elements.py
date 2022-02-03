@@ -4,12 +4,21 @@ from h5py_manager import dict_of_arrays_and_scalar_from_h5_serial
 
 
 class Dipole:
-
+    """
+    Class holding a dipole lattice element
+    - zs_dipo: z-coordinate of the left bound of the dipole
+    - ze_dipo: z-coordinate of the right bound of the dipole
+    - by: intensity of the dipole [T]
+    """
     def __init__(self, zs_dipo, ze_dipo, by):
         picmi.warp.addnewdipo(zs=zs_dipo, ze=ze_dipo, by=by)
 
 
 def interp(fx_3d):
+    """
+    Interpolate a field from the cell centers to the mesh nodes.
+    - fx_3d: cell-centered field
+    """
     fxx = 0.125 * (fx_3d[0:-1, 0:-1, 0:-1]
                    + fx_3d[0:-1:, 0:-1, 1:]
                    + fx_3d[0:-1, 1:, 0:-1]
@@ -22,7 +31,15 @@ def interp(fx_3d):
 
 
 class CrabFields:
-
+    """
+    Class initializing a gridded field lattice element assuming harmonic time dependence.
+    The fields are specified in txt files.
+    - max_rescale: the fields are rescaled so that the max of the Ey field is max_rescale
+    - efield_path: path of the txt file storing the E field
+    - hfield_path: path of the txt file storing the H field
+    - chamber: chamber object
+    - t_offs: time offset applied to the harmonic time dependence
+    """
     def __init__(self, max_rescale=1., efield_path='efield.txt',
                  hfield_path='hfield.txt', chamber=None, t_offs=None):
         get_data = picmi.getdatafromtextfile
@@ -145,7 +162,12 @@ def func_cos(t):
 
 
 class CrabFieldsH5:
-
+    """
+    Class initializing a gridded field lattice element assuming harmonic time dependence.
+    The fields are specified in an h5 file.
+    - max_rescale: the fields are rescaled so that the max of the Ey field is max_rescale
+    - fields_path: path of the h5 file storing the fields
+    """
     def __init__(self, max_rescale=None, fields_path='fields.h5'):
         dict_h5 = dict_of_arrays_and_scalar_from_h5_serial(fields_path)
         self.init_self_from_dict(dict_h5)
