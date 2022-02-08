@@ -295,7 +295,7 @@ class warp_pyecloud_sim(object):
         self.sec.add(incident_species=self.ecloud.wspecies, emitted_species=self.ecloud.wspecies,
                      conductor=self.chamber.conductors)
 
-        self.saver = Saver(self.flag_output, self.flag_checkpointing, self.nbins, self.solver, self.sec,
+        self.saver = Saver(self.flag_output, self.nbins, self.solver, self.sec,
                            temps_filename=self.temps_filename, output_filename=self.output_filename,
                            probe_filename=self.probe_filename, tot_nsteps=self.tot_nsteps, n_bunches=self.n_bunches,
                            flag_save_ek_impacts=self.flag_save_ek_impacts)
