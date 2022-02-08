@@ -109,9 +109,9 @@ ecloud_inputs = {'init_num_elecs': init_num_elecs_slice*nz,
               'secondary_angle_distribution': 'cosine_3D', 
               'N_mp_max': N_mp_max_slice*nz,'N_mp_target': N_mp_max_slice/3*nz, 'init_ecloud_fields': False}
 
-saving_inputs = {'images_dir': '/eos/user/l/lgiacome/benchmark_warp_pyecloud/square_drift_nobunch_'+sc_type+'_images',
-                 'custom_plot': noplots, 'stride_imgs': 100, 'stride_output': 1000,
-                 'output_filename': '/eos/user/l/lgiacome/benchmark_warp_pyecloud/square_drift/square_drift_'+sc_type+'_out.h5'}
+saving_inputs = {'images_dir': '/eos/user/l/lgiacome/benchmark_warp_pyecloud/square_drift_nobunch_'+sc_type+'_relat_images',
+                 'custom_plot': plots_square, 'stride_imgs': 1000, 'stride_output': 1000,
+                 'output_filename': '/eos/user/l/lgiacome/benchmark_warp_pyecloud/square_drift/square_drift_'+sc_type+'_relat_out.h5'}
 
 simulation_inputs = {'enable_trap': enable_trap,
                      'flag_relativ_tracking': True,
