@@ -2,8 +2,8 @@ import numpy as np
 from numpy.random import rand
 from warp import echarge as charge
 from warp import emass as mass
-from warp_parallel import parallelsum, top
-
+from warp_parallel import parallelsum
+from warp import top
 
 def perform_regeneration(target_n_mp, wsp, sec):
     """
