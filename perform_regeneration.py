@@ -34,8 +34,8 @@ def perform_regeneration(target_n_mp, wsp, sec):
     
     # Compute the indices of the particles to be kept/cleared       
     i_init = top.pgroup.ins[wsp.getjs()]
-    inds_clear = np.where(not flag_keep)[0] + i_init - 1
-    inds_keep = np.where(not flag_keep)[0] + i_init - 1
+    inds_clear = np.where(flag_keep == False)[0] + i_init - 1
+    inds_keep = np.where(flag_keep == True)[0] + i_init - 1
     # Compute the charge after the regeneration in the whole domain (also the other processes)
     if np.sum(inds_keep) > 0:
         chrg_after = parallelsum(np.sum(top.pgroup.pid[inds_keep, top.wpid-1]))
